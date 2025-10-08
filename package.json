@@ -1,7 +1,6 @@
 {
-  "name": "qr-fge-logo",
-  "private": true,
-  "version": "0.0.0",
+  "name": "fge-qr-logo",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
