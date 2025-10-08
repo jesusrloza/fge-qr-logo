@@ -1,50 +1,81 @@
-# React + TypeScript + Vite
+# Generador de Códigos QR - Fiscalía General del Estado de Michoacán
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este proyecto está diseñado para ayudar a los equipos a producir códigos QR consistentes y compatibles con la marca para carteles, oficios y otros documentos de la Fiscalía General del Estado de Michoacán (Fiscalía General del Estado de Michoacán).
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Node.js**: Versión 22 o superior
+- **npm**: Incluido con Node.js
 
-## Expanding the ESLint configuration
+## Instalación
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+1. Clona el repositorio:
 
-- Configure the top-level `parserOptions` property like this:
+   ```bash
+   git clone https://github.com/jesusrloza/fge-qr-logo.git
+   cd fge-qr-logo
+   ```
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+
+## Uso
+
+### Desarrollo
+
+Para ejecutar la aplicación en modo desarrollo:
+
+```bash
+npm run dev
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+Esto iniciará el servidor de desarrollo de Vite. Abre tu navegador y ve a `http://localhost:5173` (o el puerto que indique la consola).
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+## Cómo Generar Códigos QR
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+1. **Ingresa la URL**: En el campo "URL", escribe la dirección web que deseas codificar en el código QR.
+
+2. **Selecciona el Formato**: Elige el formato de descarga deseado (PNG, JPEG o WEBP) del menú desplegable.
+
+3. **Genera el Código QR**: El código QR se genera automáticamente a medida que escribes la URL.
+
+4. **Descarga el Código QR**: Haz clic en el botón "Descargar QR" para guardar el código QR en tu dispositivo con el formato seleccionado.
+
+## Características
+
+- **Diseño Institucional**: Utiliza los colores oficiales de la Fiscalía General del Estado de Michoacán (#152f4a azul oscuro y #c09f77 dorado).
+- **Logo Integrado**: Incluye el logo de la institución en el código QR.
+- **Interfaz Intuitiva**: Diseño minimalista y fácil de usar con instrucciones claras.
+- **Formatos Múltiples**: Soporte para descarga en PNG, JPEG y WEBP.
+- **Responsive**: Funciona en dispositivos móviles y de escritorio.
+
+## Tecnologías Utilizadas
+
+- **React**: Biblioteca para la interfaz de usuario
+- **TypeScript**: Para tipado estático
+- **Vite**: Herramienta de construcción rápida
+- **qr-code-styling**: Librería para generar códigos QR personalizados
+
+## Scripts Disponibles
+
+- `npm run dev`: Inicia el servidor de desarrollo
+- `npm run build`: Construye la aplicación para producción
+- `npm run lint`: Ejecuta ESLint para verificar el código
+- `npm run preview`: Previsualiza la construcción de producción
+- `npm run format`: Formatea el código con Prettier
+
+## Contribución
+
+Si deseas contribuir al proyecto, por favor sigue estos pasos:
+
+1. Crea un fork del repositorio
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Haz commit de tus cambios (`git commit -am 'Agrega nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
+
+## Licencia
+
+Este proyecto es propiedad de la Fiscalía General del Estado de Michoacán.
