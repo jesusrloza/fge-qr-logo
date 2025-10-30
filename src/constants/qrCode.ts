@@ -10,8 +10,8 @@ export const qrCode = new QRCodeStyling({
     imageSize: 0.4,
   },
   qrOptions: {
-    errorCorrectionLevel: 'Q',
-    typeNumber: 8,
+    errorCorrectionLevel: 'Q', // High quality error correction for printing/copying
+    // Removed typeNumber to allow automatic sizing based on data length
     mode: 'Byte',
   },
   backgroundOptions: { color: '#fff' },
