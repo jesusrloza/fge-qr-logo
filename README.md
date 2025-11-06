@@ -4,6 +4,14 @@ Este proyecto está diseñado para ayudar a los equipos a producir códigos QR c
 
 ## Requisitos
 
+### Opción 1: Docker (Recomendado)
+
+- **Docker**: Versión 20.x o superior
+- **Docker Compose**: Versión 2.x o superior
+- **Make**: Para usar los comandos del Makefile
+
+### Opción 2: Desarrollo Local
+
 - **Node.js**: Versión 22 o superior
 - **npm**: Incluido con Node.js
 
@@ -16,14 +24,34 @@ Este proyecto está diseñado para ayudar a los equipos a producir códigos QR c
    cd fge-qr-logo
    ```
 
-2. Instala las dependencias:
+2. Instala las dependencias (solo si usas desarrollo local):
    ```bash
    npm install
    ```
 
 ## Uso
 
-### Desarrollo
+### Usando Docker (Producción)
+
+Para ejecutar la aplicación en un contenedor Docker:
+
+```bash
+# Iniciar el contenedor
+make start
+
+# La aplicación estará disponible en http://localhost:4173
+```
+
+Otros comandos disponibles:
+
+```bash
+make stop      # Detener el contenedor
+make restart   # Reiniciar el contenedor
+make logs      # Ver logs del contenedor
+make clean     # Limpiar contenedores e imágenes
+```
+
+### Desarrollo Local
 
 Para ejecutar la aplicación en modo desarrollo:
 

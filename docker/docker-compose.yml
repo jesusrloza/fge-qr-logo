@@ -1,0 +1,15 @@
+version: '3.8'
+
+name: dgtipe
+
+services:
+  fge-qr-logo:
+    container_name: fge-qr-logo
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - '4173:4173'
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
