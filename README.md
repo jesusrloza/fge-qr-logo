@@ -94,6 +94,12 @@ Esto iniciará el servidor de desarrollo de Vite. Abre tu navegador y ve a `http
 - `npm run preview`: Previsualiza la construcción de producción
 - `npm run format`: Formatea el código con Prettier
 
+## Configuración del Repositorio
+
+### Deshabilitando GitHub Pages
+
+Si estás recibiendo notificaciones de fallos de despliegue de GitHub Pages, consulta la guía [DISABLE_GITHUB_PAGES.md](./DISABLE_GITHUB_PAGES.md) para obtener instrucciones detalladas sobre cómo deshabilitarlo completamente.
+
 ## Contribución
 
 Si deseas contribuir al proyecto, por favor sigue estos pasos:
