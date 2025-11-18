@@ -71,6 +71,42 @@ Esto iniciará el servidor de desarrollo de Vite. Abre tu navegador y ve a `http
 
 4. **Descarga el Código QR**: Haz clic en el botón "Descargar QR" para guardar el código QR en tu dispositivo con el formato seleccionado.
 
+## Acortamiento de URLs
+
+La tarjeta de configuración incluye un menú desplegable para elegir entre dos servicios de acortamiento:
+
+- **TinyURL**: realiza un GET a `https://tinyurl.com/api-create.php?url=...` y recibe la URL corta en texto plano. No requiere autenticación. (Referencia: https://tinyurl.com/app/dev)
+- **Bit.ly**: consume `https://api-ssl.bitly.com/v4/shorten` mediante un POST JSON con el campo `long_url` y un encabezado `Authorization: Bearer <token>`. El token se obtiene automáticamente de la variable de entorno `VITE_BITLY_ACCESS_TOKEN`.
+
+Para usar Bit.ly, define la variable de entorno en un archivo `.env` en la raíz del proyecto:
+
+```env
+VITE_BITLY_ACCESS_TOKEN=tu_token_aqui
+```
+
+También existe ahora un archivo `.env.example` que puedes copiar:
+
+```bash
+cp .env.example .env
+```
+
+Luego reemplaza el valor de `VITE_BITLY_ACCESS_TOKEN`.
+
+Notas importantes:
+
+- El archivo `.env` ya está incluido en `.gitignore`, no lo comitas.
+- Docker Compose carga automáticamente el archivo `.env` (`env_file: ../.env`) al ejecutar `make start`.
+- Durante la construcción, la imagen final copia el archivo `.env` dentro del contenedor para que Vite pueda leer las variables al hacer `vite preview`. Si prefieres no empaquetar secretos dentro de la imagen, elimina la línea `COPY --from=builder /app/.env ./.env` del `docker/Dockerfile` y pasa los valores sólo en tiempo de ejecución.
+- Las variables que deben estar disponibles en el frontend tienen que comenzar con el prefijo `VITE_`.
+
+Ejemplo completo de `.env` mínimo:
+
+```env
+VITE_BITLY_ACCESS_TOKEN=tu_token_aqui
+```
+
+El sistema muestra una advertencia amarilla si la URL ya es muy corta (menos de 30 caracteres) antes de enviar la petición a acortarla.
+
 ## Características
 
 - **Diseño Institucional**: Utiliza los colores oficiales de la Fiscalía General del Estado de Michoacán (#152f4a azul oscuro y #c09f77 dorado).

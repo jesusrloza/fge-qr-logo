@@ -121,6 +121,60 @@
   border: 1px solid #e0e0e0;
 }
 
+.short-input-warning {
+  background-color: #fff8dc;
+  border: 1px solid #f7d58d;
+  color: #a97300;
+  padding: 10px 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.short-input-warning .warning-icon {
+  font-size: 16px;
+}
+
+.short-input-warning p {
+  margin: 0;
+}
+
+.service-selector,
+.credential-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.service-selector select,
+.credential-field input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.service-description {
+  margin: 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.service-helper {
+  margin: 0;
+  font-size: 12px;
+  color: #7a7a7a;
+}
+
+.credential-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+}
+
 .error-message {
   background-color: #fee;
   color: #c33;

@@ -11,5 +11,7 @@ services:
     ports:
       - '4173:4173'
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
       - NODE_ENV=production

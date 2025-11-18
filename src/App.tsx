@@ -2,6 +2,9 @@ import { FileExtension } from 'qr-code-styling'
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { qrCode } from './constants'
+import { shortenerServices, shortenWithService, ShortenerServiceId } from './services/urlShortener'
+
+const SHORT_URL_WARNING_THRESHOLD = 30
 
 export default function App() {
   const [url, setUrl] = useState('https://fiscaliamichoacan.gob.mx/')
@@ -11,6 +14,11 @@ export default function App() {
   const [shortenError, setShortenError] = useState<string>('')
   const [copySuccess, setCopySuccess] = useState(false)
   const [useShortUrl, setUseShortUrl] = useState(false)
+  const [selectedService, setSelectedService] = useState<ShortenerServiceId>('isgd')
+  const trimmedUrl = url.trim()
+  const fallbackService = shortenerServices[0]!
+  const currentService = shortenerServices.find((service) => service.id === selectedService) ?? fallbackService
+  const showShortUrlWarning = trimmedUrl.length > 0 && trimmedUrl.length <= SHORT_URL_WARNING_THRESHOLD
   const ref = useRef(null)
 
   useEffect(() => {
@@ -76,6 +84,10 @@ export default function App() {
     setFileExt(event.target.value as FileExtension)
   }
 
+  const onServiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedService(event.target.value as ShortenerServiceId)
+  }
+
   const onDownloadClick = () => {
     qrCode.download({
       extension: fileExt,
@@ -84,7 +96,8 @@ export default function App() {
   }
 
   const shortenUrl = async () => {
-    if (!url || url.trim() === '') {
+    const targetUrl = url.trim()
+    if (!targetUrl) {
       setShortenError('Por favor ingrese una URL válida')
       return
     }
@@ -94,19 +107,15 @@ export default function App() {
     setShortenedUrl('')
 
     try {
-      // Using TinyURL API (free, no API key required)
-      const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`)
+      const shortUrl = await shortenWithService(currentService.id, targetUrl)
 
-      if (!response.ok) {
-        throw new Error('Error al acortar la URL')
-      }
-
-      const shortUrl = await response.text()
       setShortenedUrl(shortUrl)
-      setUseShortUrl(true) // Automatically switch to short URL
+      setUseShortUrl(true)
     } catch (error) {
       console.error('Error shortening URL:', error)
-      setShortenError('No se pudo acortar la URL. Por favor intente nuevamente.')
+      const message =
+        error instanceof Error ? error.message : 'No se pudo acortar la URL. Por favor intenta nuevamente.'
+      setShortenError(message)
     } finally {
       setIsShortening(false)
     }
@@ -164,8 +173,44 @@ export default function App() {
               )
             })()}
 
-            {/* URL Shortener Section */}
+            {showShortUrlWarning && !useShortUrl && (
+              <div className="short-input-warning">
+                <span className="warning-icon">⚠️</span>
+                <p>
+                  ¿Seguro que quieres acortar esta URL? Tiene solo {trimmedUrl.length} caracteres y ya es bastante
+                  corta.
+                </p>
+              </div>
+            )}
+
             <div className="url-shortener-section">
+              <div className="service-selector">
+                <label htmlFor="shortener-service">Servicio de acortamiento</label>
+                <select id="shortener-service" value={selectedService} onChange={onServiceChange}>
+                  {shortenerServices.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="service-description">{currentService.description}</p>
+                {currentService.helperText && <p className="service-helper">{currentService.helperText}</p>}
+              </div>
+
+              {currentService.requiresApiKey && (
+                <div className="credential-field">
+                  <label htmlFor="service-key">{currentService.apiKeyLabel}</label>
+                  <input
+                    id="service-key"
+                    type="text"
+                    placeholder={`Ingresa tu ${currentService.apiKeyLabel?.toLowerCase() ?? 'clave'}`}
+                  />
+                  <small className="credential-hint">
+                    Tus credenciales solo se almacenan localmente en este navegador.
+                  </small>
+                </div>
+              )}
+
               <button
                 className="button button-secondary"
                 onClick={shortenUrl}
@@ -205,9 +250,10 @@ export default function App() {
 
               <div className="url-shortener-warning">
                 <small>
-                  ⚠️ <strong>Nota:</strong> El servicio de acortamiento de URLs es proporcionado por un tercero
-                  (TinyURL). No controlamos la disponibilidad del servicio ni garantizamos que el enlace funcione el
-                  100% del tiempo. Use bajo su propio criterio.
+                  ⚠️ <strong>Nota:</strong>{' '}
+                  {selectedService === 'bitly'
+                    ? 'Bit.ly se utiliza mediante un token configurado en esta aplicación. No se garantiza disponibilidad ilimitada: Bitly impone límites por minuto, hora y mes. Al alcanzar cuotas o si el plan cambia, la creación de nuevos enlaces puede fallar. Los enlaces existentes pueden verse afectados si se revoca el token, expira la suscripción o se detecta abuso. Úsalo considerando posibles restricciones de tu plan.'
+                    : 'No se garantiza que los acortadores de URL gratuitos funcionen el 100% del tiempo o que siempre estén disponibles. Estos servicios pueden limitarse, cambiar o descontinuarse. Úsalos considerando tus necesidades de confiabilidad.'}
                 </small>
               </div>
             </div>

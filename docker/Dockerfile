@@ -25,6 +25,8 @@ WORKDIR /app
 # Copy built assets from builder stage
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
+## Include .env file inside final image for reference/runtime variable loading
+COPY --from=builder /app/.env ./.env
 
 # Install only vite for preview server
 RUN npm install vite
