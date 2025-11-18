@@ -3,8 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { qrCode } from './constants'
 import { shortenerServices, shortenWithService, ShortenerServiceId } from './services/urlShortener'
+import { Link as LinkIcon, Download as DownloadIcon, Copy as CopyIcon, Check as CheckIcon } from 'lucide-react'
 
-const SHORT_URL_WARNING_THRESHOLD = 30
+// Mostrar advertencia si la URL tiene esta cantidad de caracteres o menos.
+// Se elevó a 40 para que URLs como la del ejemplo (33) muestren la advertencia.
+const SHORT_URL_WARNING_THRESHOLD = 40
 
 export default function App() {
   const [url, setUrl] = useState('https://fiscaliamichoacan.gob.mx/')
@@ -14,7 +17,7 @@ export default function App() {
   const [shortenError, setShortenError] = useState<string>('')
   const [copySuccess, setCopySuccess] = useState(false)
   const [useShortUrl, setUseShortUrl] = useState(false)
-  const [selectedService, setSelectedService] = useState<ShortenerServiceId>('isgd')
+  const [selectedService, setSelectedService] = useState<ShortenerServiceId>('none')
   const trimmedUrl = url.trim()
   const fallbackService = shortenerServices[0]!
   const currentService = shortenerServices.find((service) => service.id === selectedService) ?? fallbackService
@@ -173,60 +176,47 @@ export default function App() {
               )
             })()}
 
-            {showShortUrlWarning && !useShortUrl && (
-              <div className="short-input-warning">
-                <span className="warning-icon">⚠️</span>
-                <p>
-                  ¿Seguro que quieres acortar esta URL? Tiene solo {trimmedUrl.length} caracteres y ya es bastante
-                  corta.
-                </p>
-              </div>
-            )}
-
             <div className="url-shortener-section">
               <div className="service-selector">
                 <label htmlFor="shortener-service">Servicio de acortamiento</label>
                 <select id="shortener-service" value={selectedService} onChange={onServiceChange}>
+                  <option value="none">Ninguno</option>
                   {shortenerServices.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.label}
                     </option>
                   ))}
                 </select>
-                <p className="service-description">{currentService.description}</p>
-                {currentService.helperText && <p className="service-helper">{currentService.helperText}</p>}
+                {/* Se eliminaron descripción y texto auxiliar de los servicios */}
               </div>
 
-              {currentService.requiresApiKey && (
-                <div className="credential-field">
-                  <label htmlFor="service-key">{currentService.apiKeyLabel}</label>
-                  <input
-                    id="service-key"
-                    type="text"
-                    placeholder={`Ingresa tu ${currentService.apiKeyLabel?.toLowerCase() ?? 'clave'}`}
-                  />
-                  <small className="credential-hint">
-                    Tus credenciales solo se almacenan localmente en este navegador.
-                  </small>
-                </div>
+              {selectedService !== 'none' && (
+                <>
+                  <button
+                    className="button button-secondary"
+                    onClick={shortenUrl}
+                    disabled={isShortening || !url || url.trim() === ''}
+                  >
+                    {isShortening ? (
+                      <>
+                        <LinkIcon size={16} /> Acortando...
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon size={16} /> Acortar URL
+                      </>
+                    )}
+                  </button>
+                  {shortenError && <div className="error-message">{shortenError}</div>}
+                </>
               )}
-
-              <button
-                className="button button-secondary"
-                onClick={shortenUrl}
-                disabled={isShortening || !url || url.trim() === ''}
-              >
-                {isShortening ? 'Acortando...' : '🔗 Acortar URL'}
-              </button>
-
-              {shortenError && <div className="error-message">{shortenError}</div>}
 
               {shortenedUrl && (
                 <div className="shortened-url-container">
                   <div className="shortened-url-display">
                     <span className="shortened-url-text">{shortenedUrl}</span>
                     <button className="copy-button" onClick={copyToClipboard} title="Copiar al portapapeles">
-                      {copySuccess ? '✓' : '📋'}
+                      {copySuccess ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
                     </button>
                   </div>
                   {copySuccess && <small className="copy-success">¡Copiado al portapapeles!</small>}
@@ -248,14 +238,25 @@ export default function App() {
                 </div>
               )}
 
-              <div className="url-shortener-warning">
-                <small>
-                  ⚠️ <strong>Nota:</strong>{' '}
-                  {selectedService === 'bitly'
-                    ? 'Bit.ly se utiliza mediante un token configurado en esta aplicación. No se garantiza disponibilidad ilimitada: Bitly impone límites por minuto, hora y mes. Al alcanzar cuotas o si el plan cambia, la creación de nuevos enlaces puede fallar. Los enlaces existentes pueden verse afectados si se revoca el token, expira la suscripción o se detecta abuso. Úsalo considerando posibles restricciones de tu plan.'
-                    : 'No se garantiza que los acortadores de URL gratuitos funcionen el 100% del tiempo o que siempre estén disponibles. Estos servicios pueden limitarse, cambiar o descontinuarse. Úsalos considerando tus necesidades de confiabilidad.'}
-                </small>
-              </div>
+              {selectedService !== 'none' && (
+                <div className="url-shortener-warning">
+                  <small>
+                    ⚠️ <strong>Nota:</strong>{' '}
+                    {selectedService === 'bitly'
+                      ? 'Bit.ly requiere un token de acceso y puede imponer límites según tu plan. Si se revoca el token o se alcanzan cuotas, la creación de nuevos enlaces puede fallar.'
+                      : 'Los acortadores gratuitos pueden dejar de funcionar, limitarse o descontinuarse. Úsalos considerando tus necesidades de confiabilidad.'}
+                  </small>
+                  {showShortUrlWarning && !useShortUrl && (
+                    <>
+                      <div className="warning-separator" />
+                      <small>
+                        ⚠️ ¿Seguro que quieres acortar esta URL? Tiene solo {trimmedUrl.length} caracteres y ya es
+                        bastante corta.
+                      </small>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -270,7 +271,7 @@ export default function App() {
               <option value="webp">WEBP</option>
             </select>
             <button className="button" onClick={onDownloadClick}>
-              Descargar QR
+              <DownloadIcon size={16} /> Descargar QR
             </button>
           </div>
         </div>

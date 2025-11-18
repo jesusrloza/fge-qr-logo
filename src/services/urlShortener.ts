@@ -8,20 +8,14 @@ export const shortenerServices: ShortenerDefinition[] = [
   {
     id: 'isgd',
     label: 'is.gd',
-    description: 'Servicio gratuito de acortamiento de URLs sin autenticación requerida.',
-    helperText: 'Los servicios de terceros no garantizan disponibilidad permanente de las URLs acortadas.',
   },
   {
     id: 'tinyurl',
     label: 'TinyURL',
-    description: 'Servicio gratuito de acortamiento de URLs sin autenticación requerida.',
-    helperText: 'Los servicios de terceros no garantizan disponibilidad permanente de las URLs acortadas.',
   },
   {
     id: 'bitly',
     label: 'Bit.ly',
-    description: 'Servicio premium que requiere autenticación con clave API.',
-    helperText: '⚠️ Requiere un token de acceso de Bit.ly. El uso puede estar limitado según la licencia de tu cuenta.',
   },
 ]
 
@@ -76,6 +70,10 @@ async function shortenViaIsGd(longUrl: string) {
 export async function shortenWithService(serviceId: ShortenerServiceId, longUrl: string) {
   if (!longUrl || longUrl.trim() === '') {
     throw new Error('Por favor ingresa una URL válida antes de acortarla.')
+  }
+
+  if (serviceId === 'none') {
+    throw new Error('Seleccione un servicio de acortamiento antes de intentar acortar la URL.')
   }
 
   switch (serviceId) {
