@@ -1,0 +1,172 @@
+.qr-preview-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qr-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-self: flex-start;
+}
+
+.qr-preview-header svg {
+  color: #c09f77;
+}
+
+.qr-preview-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #152f4a;
+  margin: 0;
+}
+
+.qr-preview-box {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* Fixed dimensions for consistent appearance regardless of QR version */
+  width: 290px;
+  height: 290px;
+  background-color: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+  transition:
+    border-color 0.3s ease,
+    border-style 0.3s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.qr-preview-box.qr-generated {
+  background-color: white;
+  border-style: solid;
+  border-color: #152f4a;
+  box-shadow: 0 4px 20px rgba(21, 47, 74, 0.1);
+}
+
+.qr-render-target {
+  /* Fixed size container for the QR code */
+  width: 250px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.qr-render-target canvas {
+  /* Force consistent canvas display size regardless of QR version */
+  display: block !important;
+  width: 250px !important;
+  height: 250px !important;
+  max-width: 100%;
+  image-rendering: crisp-edges;
+  /* Ensure canvas scales properly within its container */
+  object-fit: contain;
+}
+
+.qr-placeholder {
+  position: absolute;
+  inset: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #9ca3af;
+  text-align: center;
+  background: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+}
+
+.qr-placeholder svg {
+  opacity: 0.4;
+}
+
+.qr-placeholder p {
+  margin: 0;
+  font-size: 13px;
+  max-width: 180px;
+}
+
+.generate-qr-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #152f4a, #1b4b7d);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(21, 47, 74, 0.3);
+}
+
+.generate-qr-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(21, 47, 74, 0.4);
+}
+
+.generate-qr-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.generate-qr-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.qr-active-url {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.qr-url-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.url-label-small {
+  font-size: 11px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qr-char-count {
+  padding: 3px 10px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #6b7280;
+  font-family: 'Courier New', monospace;
+}
+
+.active-url-text {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #6b7280;
+  word-break: break-all;
+  padding: 8px 12px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  max-height: 60px;
+  overflow-y: auto;
+}

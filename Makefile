@@ -1,4 +1,4 @@
-.PHONY: help start stop restart build logs clean
+.PHONY: help start stop restart build logs clean dev test
 
 # Default target
 help:
@@ -9,12 +9,14 @@ help:
 	@echo "  make build     - Build the Docker image"
 	@echo "  make logs      - View container logs"
 	@echo "  make clean     - Stop and remove container and image"
+	@echo "  make dev       - Start development server (npm run dev)"
+	@echo "  make test      - Run tests (npm run test)"
 
 # Build and start the container
 start:
 	@echo "Building and starting the container..."
 	docker-compose -f docker/docker-compose.yml up -d --build
-	@echo "Container started! Application available at http://localhost:4173"
+	@echo "Container started! Application available at http://localhost:3000"
 
 # Stop the container
 stop:
@@ -39,3 +41,11 @@ clean:
 	@echo "Cleaning up..."
 	docker-compose -f docker/docker-compose.yml down --rmi all --volumes
 	@echo "Cleanup complete."
+
+# Development server
+dev:
+	npm run dev
+
+# Run tests
+test:
+	npm run test

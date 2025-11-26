@@ -1,0 +1,32 @@
+{
+  "entries": {
+    "551a2b9c23d4b3b1": {
+      "shortUrl": "https://tinyurl.com/24uqs3az",
+      "originalUrl": "https://fiscaliamichoacan.gob.mx/",
+      "service": "tinyurl",
+      "createdAt": "2025-11-26T20:24:33.579Z",
+      "lastAccessedAt": "2025-11-26T21:37:50.282Z",
+      "accessCount": 2
+    },
+    "14c2352cad7e2c44": {
+      "shortUrl": "https://is.gd/WbGVq9",
+      "originalUrl": "https://fiscaliamichoacan.gob.mx/",
+      "service": "isgd",
+      "createdAt": "2025-11-26T20:26:06.370Z",
+      "lastAccessedAt": "2025-11-26T23:04:58.368Z",
+      "accessCount": 24
+    },
+    "9d76b0b249b7aea8": {
+      "shortUrl": "https://is.gd/v0jV8O",
+      "originalUrl": "https://fiscaliamichoacan.gob.mx/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "service": "isgd",
+      "createdAt": "2025-11-26T22:20:46.586Z",
+      "lastAccessedAt": "2025-11-26T22:20:46.586Z",
+      "accessCount": 1
+    }
+  },
+  "metadata": {
+    "version": 1,
+    "lastCleanup": "2025-11-26T19:52:13.399Z"
+  }
+}

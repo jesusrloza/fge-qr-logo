@@ -1,107 +1,242 @@
 import { FileExtension } from 'qr-code-styling'
+import type QRCodeStyling from 'qr-code-styling'
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
-import { qrCode } from './constants'
-import { shortenerServices, shortenWithService, ShortenerServiceId } from './services/urlShortener'
-import { Link as LinkIcon, Download as DownloadIcon, Copy as CopyIcon, Check as CheckIcon } from 'lucide-react'
-
-// Mostrar advertencia si la URL tiene esta cantidad de caracteres o menos.
-// Se elevó a 40 para que URLs como la del ejemplo (33) muestren la advertencia.
-const SHORT_URL_WARNING_THRESHOLD = 40
+import { createQrCodeAsync, getQrVersion } from './constants'
+import { shortenUrl, logEvent } from './services/api'
+import { hasValidSession, getCurpForApi, getStoredToken } from './services/auth'
+import { CurpModal, UrlInput, ShortenerControls, QrPreview, DownloadPanel, ToastContainer } from './components'
+import type { ShortenerServiceId } from './components'
+import { useToast } from './hooks'
 
 export default function App() {
+  // Auth state
+  const [showCurpModal, setShowCurpModal] = useState(false)
+  const [isAuthChecked, setIsAuthChecked] = useState(false)
+
+  // URL state
   const [url, setUrl] = useState('https://fiscaliamichoacan.gob.mx/')
-  const [fileExt, setFileExt] = useState<FileExtension>('png')
   const [shortenedUrl, setShortenedUrl] = useState<string>('')
+  const [useShortUrl, setUseShortUrl] = useState(false)
+
+  // QR state
+  const [isQrGenerated, setIsQrGenerated] = useState(false)
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false)
+
+  // Shortener state
+  const [selectedService, setSelectedService] = useState<ShortenerServiceId>('none')
   const [isShortening, setIsShortening] = useState(false)
   const [shortenError, setShortenError] = useState<string>('')
-  const [copySuccess, setCopySuccess] = useState(false)
-  const [useShortUrl, setUseShortUrl] = useState(false)
-  const [selectedService, setSelectedService] = useState<ShortenerServiceId>('none')
-  const trimmedUrl = url.trim()
-  const fallbackService = shortenerServices[0]!
-  const currentService = shortenerServices.find((service) => service.id === selectedService) ?? fallbackService
-  const showShortUrlWarning = trimmedUrl.length > 0 && trimmedUrl.length <= SHORT_URL_WARNING_THRESHOLD
-  const ref = useRef(null)
 
+  // Download state
+  const [fileExt, setFileExt] = useState<FileExtension>('png')
+
+  // Toast notifications
+  const { toasts, dismissToast, showError, showSuccess, showInfo } = useToast()
+
+  // QR code ref
+  const qrRef = useRef<HTMLDivElement>(null)
+  const qrInstanceRef = useRef<QRCodeStyling | null>(null)
+
+  // Computed values - URL that would be used for QR generation
+  const activeUrl = useShortUrl && shortenedUrl ? shortenedUrl : url
+  const activeUrlLength = activeUrl.length
+
+  // Check authentication on mount
   useEffect(() => {
-    if (ref.current) {
-      try {
-        qrCode.append(ref.current)
-      } catch (error) {
-        console.error('Error appending QR code:', error)
+    const checkAuth = async () => {
+      const token = getStoredToken()
+      if (!token) {
+        setShowCurpModal(true)
+      } else if (token !== 'anonymous') {
+        const isValid = await hasValidSession()
+        if (!isValid) {
+          setShowCurpModal(true)
+        }
       }
+      setIsAuthChecked(true)
     }
+    checkAuth()
   }, [])
 
+  // Initialize QR code library (create fresh instance and append to DOM)
+  // This effect must run AFTER isAuthChecked is true, so the QrPreview component is mounted
   useEffect(() => {
-    try {
-      // Determine which URL to use for the QR code
-      const activeUrl = useShortUrl && shortenedUrl ? shortenedUrl : url
-
-      if (activeUrl && activeUrl.trim() !== '') {
-        // Dynamically adjust settings based on URL length
-        const urlLength = activeUrl.length
-
-        // Optimized for printing and copying with good error correction
-        // Thresholds calculated for 40% logo size:
-        // - Up to 120 chars: Error Level Q (25% recovery) - best for printing
-        // - 121-180 chars: Error Level M (15% recovery) - good balance
-        // - 181+ chars: Error Level L (7% recovery) + smaller logo - maximum capacity
-
-        let imageSize = 0.4
-        let errorCorrectionLevel: 'L' | 'M' | 'Q' | 'H' = 'Q'
-
-        if (urlLength > 180) {
-          imageSize = 0.25 // Reduce logo for very long URLs
-          errorCorrectionLevel = 'L' // Lowest error correction for max capacity
-        } else if (urlLength > 120) {
-          imageSize = 0.4 // Keep full logo
-          errorCorrectionLevel = 'M' // Medium error correction
-        }
-        // For URLs ≤120 chars, keep default settings (imageSize: 0.4, errorCorrection: 'Q')
-        // This provides the best quality for printing and copying
-
-        qrCode.update({
-          data: activeUrl,
-          imageOptions: {
-            imageSize: imageSize,
-          },
-          qrOptions: {
-            errorCorrectionLevel: errorCorrectionLevel,
-            mode: 'Byte',
-          },
-        })
-      }
-    } catch (error) {
-      console.error('Error updating QR code:', error)
+    // Don't run until auth check is complete and the QR preview is mounted
+    if (!isAuthChecked) {
+      console.log('[QR Debug] Init effect skipped - auth not checked yet')
+      return
     }
-  }, [url, useShortUrl, shortenedUrl])
 
-  const onUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault()
-    setUrl(event.target.value)
-  }
-
-  const onExtensionChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setFileExt(event.target.value as FileExtension)
-  }
-
-  const onServiceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedService(event.target.value as ShortenerServiceId)
-  }
-
-  const onDownloadClick = () => {
-    qrCode.download({
-      extension: fileExt,
-      name: 'qr-code',
+    console.log('[QR Debug] Init effect running', {
+      hasRef: !!qrRef.current,
+      hasInstance: !!qrInstanceRef.current,
+      refChildren: qrRef.current?.children.length,
     })
+
+    if (qrRef.current && !qrInstanceRef.current) {
+      // Create QR instance asynchronously to ensure logo is cached
+      const initQr = async () => {
+        try {
+          if (!qrRef.current) return
+
+          // Clear any existing content first
+          qrRef.current.innerHTML = ''
+
+          // Create a fresh QR code instance with cached logo
+          console.log('[QR Debug] Creating fresh QR instance (async) and appending')
+          const qrInstance = await createQrCodeAsync()
+
+          if (!qrRef.current) return // Component may have unmounted
+
+          qrInstance.append(qrRef.current)
+          qrInstanceRef.current = qrInstance
+
+          // Check what was appended
+          setTimeout(() => {
+            const canvas = qrRef.current?.querySelector('canvas')
+            console.log('[QR Debug] After append', {
+              hasCanvas: !!canvas,
+              canvasWidth: canvas?.width,
+              canvasHeight: canvas?.height,
+              canvasDisplay: canvas?.style.display,
+              refChildren: qrRef.current?.children.length,
+            })
+          }, 100)
+        } catch (error) {
+          console.error('Error initializing QR code:', error)
+        }
+      }
+
+      initQr()
+    }
+
+    // Cleanup: destroy instance when component unmounts
+    return () => {
+      console.log('[QR Debug] Cleanup - clearing instance ref')
+      qrInstanceRef.current = null
+    }
+  }, [isAuthChecked])
+
+  // Track if the active URL has changed since last QR generation
+  const lastGeneratedUrlRef = useRef<string>('')
+
+  // Handle toggling between short/original URL - regenerate QR if it was already generated
+  const handleToggleUseShort = (useShort: boolean) => {
+    setUseShortUrl(useShort)
+
+    // Only regenerate if QR was already generated and we have a shortened URL to toggle to/from
+    if (isQrGenerated && shortenedUrl) {
+      const newActiveUrl = useShort ? shortenedUrl : url
+      regenerateQrWithUrl(newActiveUrl)
+    }
   }
 
-  const shortenUrl = async () => {
+  // Helper function to regenerate QR with a specific URL (used by toggle and generate button)
+  const regenerateQrWithUrl = (targetUrl: string) => {
+    const qrInstance = qrInstanceRef.current
+    if (!qrInstance || !targetUrl.trim()) return
+
+    const urlLength = targetUrl.length
+
+    // Adjust logo size based on URL length to maintain scannability
+    let imageSize = 0.4
+    if (urlLength > 180) {
+      imageSize = 0.25
+    } else if (urlLength > 120) {
+      imageSize = 0.35
+    }
+
+    // Calculate appropriate QR version (at least MIN_QR_VERSION for recognition)
+    const typeNumber = getQrVersion(urlLength)
+
+    qrInstance.update({
+      data: targetUrl,
+      imageOptions: { imageSize },
+      qrOptions: {
+        errorCorrectionLevel: 'Q',
+        mode: 'Byte',
+        typeNumber,
+      },
+    })
+
+    lastGeneratedUrlRef.current = targetUrl
+  }
+
+  // Handle QR generation
+  const handleGenerateQr = () => {
+    if (!activeUrl.trim()) return
+
+    const qrInstance = qrInstanceRef.current
+    console.log('[QR Debug] Generate clicked', {
+      hasRef: !!qrRef.current,
+      hasInstance: !!qrInstance,
+      refChildren: qrRef.current?.children.length,
+      hasCanvas: !!qrRef.current?.querySelector('canvas'),
+    })
+
+    if (!qrInstance) {
+      console.error('[QR Debug] No QR instance available!')
+      showError('Error', 'El generador de QR no está listo. Por favor recarga la página.')
+      return
+    }
+
+    setIsGeneratingQr(true)
+
+    try {
+      console.log('[QR Debug] Calling regenerateQrWithUrl()', { urlLength: activeUrl.length })
+
+      // Use the helper function to regenerate QR
+      regenerateQrWithUrl(activeUrl)
+
+      // Check canvas state after update
+      setTimeout(() => {
+        const canvas = qrRef.current?.querySelector('canvas')
+        console.log('[QR Debug] After update', {
+          hasCanvas: !!canvas,
+          canvasWidth: canvas?.width,
+          canvasHeight: canvas?.height,
+          canvasStyleWidth: canvas?.style.width,
+          canvasStyleHeight: canvas?.style.height,
+        })
+      }, 100)
+
+      setIsQrGenerated(true)
+
+      // Log QR generation - only on explicit user action (button click)
+      logEvent(
+        'qr_generated',
+        {
+          url: activeUrl,
+          urlLength: activeUrl.length,
+          isShortened: useShortUrl && !!shortenedUrl,
+        },
+        getCurpForApi(),
+      )
+
+      showSuccess('QR generado', 'El código QR se generó exitosamente.')
+    } catch (error) {
+      console.error('Error generating QR code:', error)
+      showError('Error', 'No se pudo generar el código QR.')
+    } finally {
+      setIsGeneratingQr(false)
+    }
+  }
+
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl)
+    // Don't reset shortener state - they're independent
+  }
+
+  const handleShorten = async () => {
     const targetUrl = url.trim()
     if (!targetUrl) {
       setShortenError('Por favor ingrese una URL válida')
+      return
+    }
+
+    if (selectedService === 'none') {
+      setShortenError('Por favor seleccione un servicio de acortamiento')
       return
     }
 
@@ -110,172 +245,144 @@ export default function App() {
     setShortenedUrl('')
 
     try {
-      const shortUrl = await shortenWithService(currentService.id, targetUrl)
+      const result = await shortenUrl(targetUrl, selectedService, getCurpForApi())
 
-      setShortenedUrl(shortUrl)
+      setShortenedUrl(result.shortUrl)
       setUseShortUrl(true)
+
+      // If QR was already generated, regenerate it with the new shortened URL
+      if (isQrGenerated) {
+        regenerateQrWithUrl(result.shortUrl)
+      }
+
+      if (result.cached) {
+        showInfo('URL en caché', 'Esta URL ya había sido acortada previamente.')
+      } else {
+        showSuccess('URL acortada', 'La URL se acortó exitosamente.')
+      }
     } catch (error) {
       console.error('Error shortening URL:', error)
       const message =
         error instanceof Error ? error.message : 'No se pudo acortar la URL. Por favor intenta nuevamente.'
       setShortenError(message)
+      showError('Error al acortar URL', message, {
+        label: 'Intentar con otro servicio',
+        onClick: () => {
+          const services: ShortenerServiceId[] = ['isgd', 'tinyurl', 'bitly']
+          const currentIndex = services.indexOf(selectedService as ShortenerServiceId)
+          const nextService = services[(currentIndex + 1) % services.length]
+          setSelectedService(nextService)
+        },
+      })
     } finally {
       setIsShortening(false)
     }
   }
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(shortenedUrl)
-      setCopySuccess(true)
-      setTimeout(() => setCopySuccess(false), 2000)
-    } catch (error) {
-      console.error('Error copying to clipboard:', error)
+  const handleDownload = () => {
+    if (!isQrGenerated) {
+      showError('Sin QR', 'Primero genera un código QR para poder descargarlo.')
+      return
     }
+
+    const qrInstance = qrInstanceRef.current
+    if (!qrInstance) {
+      showError('Error', 'El generador de QR no está disponible.')
+      return
+    }
+
+    qrInstance.download({
+      extension: fileExt,
+      name: 'qr-fge-michoacan',
+    })
+
+    // Log download event - intentional user action
+    logEvent(
+      'qr_downloaded',
+      {
+        url: lastGeneratedUrlRef.current,
+        format: fileExt,
+        isShortened: useShortUrl && !!shortenedUrl,
+      },
+      getCurpForApi(),
+    )
+
+    showSuccess('QR descargado', `El código QR se descargó en formato ${fileExt.toUpperCase()}.`)
+  }
+
+  const handleAuthSuccess = () => {
+    showSuccess('Sesión iniciada', 'Tu identificación ha sido registrada.')
+    logEvent('auth_success', { anonymous: false }, getCurpForApi())
+  }
+
+  if (!isAuthChecked) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner" />
+        <p>Cargando...</p>
+      </div>
+    )
   }
 
   return (
     <div className="App">
+      <CurpModal isOpen={showCurpModal} onClose={() => setShowCurpModal(false)} onSuccess={handleAuthSuccess} />
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       <header className="header">
         <h1>Generador de Códigos QR</h1>
         <p>Fiscalía General del Estado de Michoacán</p>
       </header>
-      <div className="instructions">
-        <p>
-          Ingrese la URL que desea codificar en el código QR. Seleccione el formato de descarga y haga clic en
-          "Descargar" para obtener su código QR personalizado.
-        </p>
-        <p style={{ fontSize: '14px', color: '#666', marginTop: '10px' }}>
-          💡 <strong>Consejo:</strong> Para mejor calidad de impresión y escaneo, mantenga las URLs por debajo de 120
-          caracteres. Los códigos QR están optimizados para resistir daños en copias e impresoras antiguas.
-        </p>
-      </div>
-      <div className="container">
-        <div className="card">
-          <h2>Configuración</h2>
-          <div className="input-group">
-            <label htmlFor="url">URL:</label>
-            <input id="url" type="url" value={url} onChange={onUrlChange} placeholder="Ingrese la URL aquí" />
-            {(() => {
-              const activeUrlLength = useShortUrl && shortenedUrl ? shortenedUrl.length : url.length
-              const isShortUrlActive = useShortUrl && shortenedUrl
-              return (
-                <small
-                  style={{
-                    color: activeUrlLength > 180 ? 'red' : activeUrlLength > 120 ? 'orange' : 'green',
-                    fontWeight: activeUrlLength > 120 ? 'bold' : 'normal',
-                  }}
-                >
-                  Caracteres: {activeUrlLength}
-                  {isShortUrlActive && ' (URL corta)'}
-                  {!isShortUrlActive && ' (URL original)'}
-                  {activeUrlLength <= 120 && ' ✓ Calidad óptima para impresión'}
-                  {activeUrlLength > 120 && activeUrlLength <= 180 && ' ⚠️ Calidad media - aún apta para impresión'}
-                  {activeUrlLength > 180 && ' ⚠️ Calidad reducida - puede ser difícil de escanear en impresiones'}
-                </small>
-              )
-            })()}
 
-            <div className="url-shortener-section">
-              <div className="service-selector">
-                <label htmlFor="shortener-service">Servicio de acortamiento</label>
-                <select id="shortener-service" value={selectedService} onChange={onServiceChange}>
-                  <option value="none">Ninguno</option>
-                  {shortenerServices.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.label}
-                    </option>
-                  ))}
-                </select>
-                {/* Se eliminaron descripción y texto auxiliar de los servicios */}
-              </div>
+      <main className="main-content">
+        <div className="card card-config">
+          <h2>1. Ingresa la URL</h2>
+          <UrlInput
+            url={url}
+            onChange={handleUrlChange}
+            activeUrlLength={activeUrlLength}
+            isUsingShortUrl={useShortUrl && !!shortenedUrl}
+          />
 
-              {selectedService !== 'none' && (
-                <>
-                  <button
-                    className="button button-secondary"
-                    onClick={shortenUrl}
-                    disabled={isShortening || !url || url.trim() === ''}
-                  >
-                    {isShortening ? (
-                      <>
-                        <LinkIcon size={16} /> Acortando...
-                      </>
-                    ) : (
-                      <>
-                        <LinkIcon size={16} /> Acortar URL
-                      </>
-                    )}
-                  </button>
-                  {shortenError && <div className="error-message">{shortenError}</div>}
-                </>
-              )}
-
-              {shortenedUrl && (
-                <div className="shortened-url-container">
-                  <div className="shortened-url-display">
-                    <span className="shortened-url-text">{shortenedUrl}</span>
-                    <button className="copy-button" onClick={copyToClipboard} title="Copiar al portapapeles">
-                      {copySuccess ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
-                    </button>
-                  </div>
-                  {copySuccess && <small className="copy-success">¡Copiado al portapapeles!</small>}
-
-                  {/* Toggle control */}
-                  <div className="url-toggle-container">
-                    <label className="toggle-label">
-                      <input
-                        type="checkbox"
-                        checked={useShortUrl}
-                        onChange={(e) => setUseShortUrl(e.target.checked)}
-                        className="toggle-checkbox"
-                      />
-                      <span className="toggle-text">
-                        {useShortUrl ? '✓ Usando URL corta en el QR' : 'Usar URL corta en el QR'}
-                      </span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {selectedService !== 'none' && (
-                <div className="url-shortener-warning">
-                  <small>
-                    ⚠️ <strong>Nota:</strong>{' '}
-                    {selectedService === 'bitly'
-                      ? 'Bit.ly requiere un token de acceso y puede imponer límites según tu plan. Si se revoca el token o se alcanzan cuotas, la creación de nuevos enlaces puede fallar.'
-                      : 'Los acortadores gratuitos pueden dejar de funcionar, limitarse o descontinuarse. Úsalos considerando tus necesidades de confiabilidad.'}
-                  </small>
-                  {showShortUrlWarning && !useShortUrl && (
-                    <>
-                      <div className="warning-separator" />
-                      <small>
-                        ⚠️ ¿Seguro que quieres acortar esta URL? Tiene solo {trimmedUrl.length} caracteres y ya es
-                        bastante corta.
-                      </small>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <h2 className="section-title">2. Acortar URL (Opcional)</h2>
+          <ShortenerControls
+            originalUrl={url}
+            shortenedUrl={shortenedUrl}
+            selectedService={selectedService}
+            isShortening={isShortening}
+            error={shortenError}
+            useShortUrl={useShortUrl}
+            isQrGenerated={isQrGenerated}
+            onServiceChange={setSelectedService}
+            onShorten={handleShorten}
+            onToggleUseShort={handleToggleUseShort}
+          />
         </div>
-        <div className="card">
-          <h2>Código QR Generado</h2>
-          <div className="qr-container" ref={ref} />
-          <div className="download-controls">
-            <label htmlFor="format">Formato de descarga:</label>
-            <select id="format" onChange={onExtensionChange} value={fileExt}>
-              <option value="png">PNG</option>
-              <option value="jpeg">JPEG</option>
-              <option value="webp">WEBP</option>
-            </select>
-            <button className="button" onClick={onDownloadClick}>
-              <DownloadIcon size={16} /> Descargar QR
-            </button>
-          </div>
+
+        <div className="card card-preview">
+          <h2>3. Vista Previa y Descarga</h2>
+          <QrPreview
+            ref={qrRef}
+            activeUrl={activeUrl}
+            isUsingShortUrl={useShortUrl && !!shortenedUrl}
+            isGenerated={isQrGenerated}
+            onGenerate={handleGenerateQr}
+            isGenerating={isGeneratingQr}
+          />
+          <DownloadPanel
+            fileExt={fileExt}
+            onExtensionChange={setFileExt}
+            onDownload={handleDownload}
+            disabled={!isQrGenerated}
+          />
         </div>
-      </div>
+      </main>
+
+      <footer className="footer">
+        <p>Dirección General de Tecnologías de la Información, Planeación y Estadística</p>
+        <p className="footer-version">v0.1.0</p>
+      </footer>
     </div>
   )
 }

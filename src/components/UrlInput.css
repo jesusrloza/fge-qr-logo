@@ -1,0 +1,130 @@
+.url-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #152f4a;
+  font-size: 15px;
+}
+
+.url-label svg {
+  color: #6b7280;
+}
+
+.url-input {
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: #152f4a;
+  box-shadow: 0 0 0 3px rgba(21, 47, 74, 0.1);
+}
+
+.url-input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.url-input::placeholder {
+  color: #9ca3af;
+}
+
+.url-quality {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.url-quality.quality-optimal {
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+}
+
+.url-quality.quality-optimal .char-info,
+.url-quality.quality-optimal .quality-text {
+  color: #047857;
+}
+
+.url-quality.quality-medium {
+  background-color: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.url-quality.quality-medium .char-info,
+.url-quality.quality-medium .quality-text {
+  color: #b45309;
+}
+
+.url-quality.quality-low {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.url-quality.quality-low .char-info,
+.url-quality.quality-low .quality-text {
+  color: #dc2626;
+}
+
+.char-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  flex-wrap: wrap;
+}
+
+.char-count {
+  font-family: 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+.url-type-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.1);
+  margin-left: 4px;
+}
+
+.url-type-original {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.quality-text {
+  font-size: 12px;
+  margin-left: 20px;
+}
+
+.url-hint {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+  margin: 4px 0 0 0;
+  padding: 10px 12px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #152f4a;
+}
+
+.url-hint strong {
+  color: #374151;
+}
