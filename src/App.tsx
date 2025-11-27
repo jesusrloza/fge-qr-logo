@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { createQrCodeAsync, getQrVersion } from './constants'
 import { shortenUrl, logEvent } from './services/api'
-import { hasValidSession, getCurpForApi, getStoredToken } from './services/auth'
+import { hasValidSession, getCurpForApi, getStoredToken, migrateLocalStorage } from './services/auth'
 import { CurpModal, UrlInput, ShortenerControls, QrPreview, DownloadPanel, ToastContainer } from './components'
 import type { ShortenerServiceId } from './components'
 import { useToast } from './hooks'
@@ -45,6 +45,9 @@ export default function App() {
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Migrate from old localStorage format if needed
+      migrateLocalStorage()
+
       const token = getStoredToken()
       if (!token) {
         setShowCurpModal(true)
