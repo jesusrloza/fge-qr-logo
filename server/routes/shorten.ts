@@ -9,7 +9,7 @@ const logger = createLogger('ShortenRoute')
 interface ShortenRequest {
   url: string
   service: string
-  curp?: string // Optional user identifier
+  curp?: string // This is now the curpHashPrefix (pre-hashed on server during auth)
 }
 
 interface ShortenResponse {
@@ -20,7 +20,7 @@ interface ShortenResponse {
 }
 
 router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
-  const { url, service, curp } = req.body as ShortenRequest
+  const { url, service, curp: curpHashPrefix } = req.body as ShortenRequest
 
   // Validate request
   if (!url || typeof url !== 'string' || url.trim() === '') {
@@ -41,17 +41,26 @@ router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
 
   const trimmedUrl = url.trim()
   const serviceId = service as ShortenerServiceId
+  // curpHashPrefix is already the 8-char hash prefix from auth, or undefined for anonymous
+  const userIdentifier = curpHashPrefix || 'anonymous'
 
   logger.debug('Shorten request received', {
     service: serviceId,
     urlLength: trimmedUrl.length,
+    curpHashPrefix: userIdentifier,
   })
 
   try {
     // Check cache first
     const cachedUrl = getCachedUrl(serviceId, trimmedUrl)
     if (cachedUrl) {
-      logger.debug('Cache hit', { service: serviceId })
+      logger.info('🔗 URL acortada (caché)', {
+        service: serviceId,
+        originalUrlLength: trimmedUrl.length,
+        shortUrl: cachedUrl,
+        cached: true,
+        curpHashPrefix: userIdentifier,
+      })
       return res.json({
         success: true,
         shortUrl: cachedUrl,
@@ -68,9 +77,10 @@ router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
     // Log the URL shortening event
     logger.info('🔗 URL acortada', {
       service: serviceId,
-      originalUrl: trimmedUrl,
+      originalUrlLength: trimmedUrl.length,
       shortUrl,
-      curp: curp ? curp.substring(0, 4) + '***' : 'anonymous',
+      cached: false,
+      curpHashPrefix: userIdentifier,
     })
 
     return res.json({
@@ -84,7 +94,7 @@ router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
     logger.error('Failed to shorten URL', {
       service: serviceId,
       error: errorMessage,
-      curp: curp ? curp.substring(0, 4) + '***' : 'anonymous',
+      curpHashPrefix: userIdentifier,
     })
 
     return res.status(500).json({

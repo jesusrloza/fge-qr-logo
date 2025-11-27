@@ -13,6 +13,7 @@ describe('API Service', () => {
   describe('shortenUrl', () => {
     it('should return shortened URL on success', async () => {
       mockFetch.mockResolvedValueOnce({
+        ok: true,
         json: () =>
           Promise.resolve({
             success: true,
@@ -40,6 +41,7 @@ describe('API Service', () => {
 
     it('should return cached flag when URL is from cache', async () => {
       mockFetch.mockResolvedValueOnce({
+        ok: true,
         json: () =>
           Promise.resolve({
             success: true,
@@ -55,6 +57,7 @@ describe('API Service', () => {
 
     it('should throw error on API failure', async () => {
       mockFetch.mockResolvedValueOnce({
+        ok: false,
         json: () =>
           Promise.resolve({
             success: false,
@@ -94,18 +97,22 @@ describe('API Service', () => {
   })
 
   describe('verifyCurp', () => {
-    it('should return token on successful verification', async () => {
+    it('should return token and curpHashPrefix on successful verification', async () => {
       mockFetch.mockResolvedValueOnce({
         json: () =>
           Promise.resolve({
             success: true,
             token: 'jwt-token-123',
+            curpHashPrefix: 'fcdbf2f2',
           }),
       })
 
-      const token = await verifyCurp('GARC850101HDFRRL09')
+      const result = await verifyCurp('GARC850101HDFRRL09')
 
-      expect(token).toBe('jwt-token-123')
+      expect(result).toEqual({
+        token: 'jwt-token-123',
+        curpHashPrefix: 'fcdbf2f2',
+      })
     })
 
     it('should throw error on invalid CURP', async () => {

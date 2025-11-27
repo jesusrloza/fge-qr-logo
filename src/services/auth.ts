@@ -1,7 +1,7 @@
 import { verifyCurp, validateToken, registerAnonymous } from './api'
 
 const TOKEN_KEY = 'fge_qr_token'
-const CURP_KEY = 'fge_qr_curp'
+const CURP_HASH_KEY = 'fge_qr_curp_hash'
 
 /**
  * Get the stored JWT token
@@ -11,18 +11,25 @@ export function getStoredToken(): string | null {
 }
 
 /**
- * Get the stored CURP (first 4 chars only for display)
+ * Get the stored CURP hash prefix (for API calls and display)
  */
-export function getStoredCurpPrefix(): string | null {
-  return localStorage.getItem(CURP_KEY)
+export function getStoredCurpHashPrefix(): string | null {
+  return localStorage.getItem(CURP_HASH_KEY)
 }
 
 /**
- * Store token and CURP prefix
+ * @deprecated Use getStoredCurpHashPrefix instead
  */
-export function storeCredentials(token: string, curp: string): void {
+export function getStoredCurpPrefix(): string | null {
+  return getStoredCurpHashPrefix()
+}
+
+/**
+ * Store token and CURP hash prefix
+ */
+export function storeCredentials(token: string, curpHashPrefix: string): void {
   localStorage.setItem(TOKEN_KEY, token)
-  localStorage.setItem(CURP_KEY, curp.substring(0, 4).toUpperCase())
+  localStorage.setItem(CURP_HASH_KEY, curpHashPrefix)
 }
 
 /**
@@ -30,7 +37,7 @@ export function storeCredentials(token: string, curp: string): void {
  */
 export function clearCredentials(): void {
   localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(CURP_KEY)
+  localStorage.removeItem(CURP_HASH_KEY)
 }
 
 /**
@@ -62,8 +69,8 @@ export async function hasValidSession(): Promise<boolean> {
  * Login with CURP
  */
 export async function loginWithCurp(curp: string): Promise<void> {
-  const token = await verifyCurp(curp)
-  storeCredentials(token, curp)
+  const { token, curpHashPrefix } = await verifyCurp(curp)
+  storeCredentials(token, curpHashPrefix)
 }
 
 /**
@@ -73,16 +80,17 @@ export async function continueAnonymous(): Promise<void> {
   await registerAnonymous()
   // Store a flag indicating anonymous session
   localStorage.setItem(TOKEN_KEY, 'anonymous')
-  localStorage.setItem(CURP_KEY, 'anon')
+  localStorage.setItem(CURP_HASH_KEY, 'anonymous')
 }
 
 /**
- * Get CURP for API calls (if available)
+ * Get CURP hash prefix for API calls (if available)
+ * This is the pre-hashed identifier from the server
  */
 export function getCurpForApi(): string | undefined {
-  const prefix = getStoredCurpPrefix()
-  if (!prefix || prefix === 'anon') return undefined
-  return prefix // We only have the prefix, server will use token
+  const hashPrefix = getStoredCurpHashPrefix()
+  if (!hashPrefix || hashPrefix === 'anonymous') return undefined
+  return hashPrefix
 }
 
 /**

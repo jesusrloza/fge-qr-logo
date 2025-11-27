@@ -129,6 +129,18 @@ export default function App() {
     if (isQrGenerated && shortenedUrl) {
       const newActiveUrl = useShort ? shortenedUrl : url
       regenerateQrWithUrl(newActiveUrl)
+
+      // Log the QR regeneration due to URL toggle
+      logEvent(
+        'qr_generated',
+        {
+          url: newActiveUrl,
+          urlLength: newActiveUrl.length,
+          isShortened: useShort,
+          trigger: 'url_toggle', // User toggled between short/original URL
+        },
+        getCurpForApi(),
+      )
     }
   }
 
@@ -210,6 +222,7 @@ export default function App() {
           url: activeUrl,
           urlLength: activeUrl.length,
           isShortened: useShortUrl && !!shortenedUrl,
+          trigger: 'manual', // Explicit button click
         },
         getCurpForApi(),
       )
@@ -253,6 +266,18 @@ export default function App() {
       // If QR was already generated, regenerate it with the new shortened URL
       if (isQrGenerated) {
         regenerateQrWithUrl(result.shortUrl)
+
+        // Log the auto-regenerated QR with shortened URL
+        logEvent(
+          'qr_generated',
+          {
+            url: result.shortUrl,
+            urlLength: result.shortUrl.length,
+            isShortened: true,
+            trigger: 'url_shortened', // Indicates this was auto-triggered by shortening
+          },
+          getCurpForApi(),
+        )
       }
 
       if (result.cached) {

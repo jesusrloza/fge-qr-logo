@@ -68,7 +68,7 @@ export async function logEvent(action: string, data?: Record<string, unknown>, c
 /**
  * Verify CURP and get JWT token
  */
-export async function verifyCurp(curp: string): Promise<string> {
+export async function verifyCurp(curp: string): Promise<{ token: string; curpHashPrefix: string }> {
   const response = await fetch(`${API_BASE}/api/auth/verify-curp`, {
     method: 'POST',
     headers: {
@@ -83,7 +83,10 @@ export async function verifyCurp(curp: string): Promise<string> {
     throw new Error(data.error || 'Error al verificar CURP')
   }
 
-  return data.token
+  return {
+    token: data.token,
+    curpHashPrefix: data.curpHashPrefix,
+  }
 }
 
 /**

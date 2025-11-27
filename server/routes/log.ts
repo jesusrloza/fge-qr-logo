@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express'
-import crypto from 'crypto'
 import { createLogger } from '../services/logger.js'
 
 const router = Router()
@@ -10,30 +9,22 @@ type LogAction = 'qr_generated' | 'qr_downloaded' | 'auth_success'
 interface LogRequest {
   action: LogAction
   data?: Record<string, unknown>
-  curp?: string
+  curp?: string // This is now the curpHashPrefix (pre-hashed on server during auth)
 }
 
 interface LogResponse {
   success: boolean
 }
 
-/**
- * Hash CURP and return prefix for logging (same as auth route)
- */
-function getCurpHashPrefix(curp?: string): string {
-  if (!curp) return 'anonymous'
-  const hash = crypto.createHash('sha256').update(curp.toUpperCase()).digest('hex')
-  return hash.substring(0, 8)
-}
-
 router.post('/', (req: Request, res: Response<LogResponse>) => {
-  const { action, data, curp } = req.body as LogRequest
+  const { action, data, curp: curpHashPrefix } = req.body as LogRequest
 
   if (!action) {
     return res.status(400).json({ success: false })
   }
 
-  const curpHashPrefix = getCurpHashPrefix(curp)
+  // curpHashPrefix is already the 8-char hash prefix from auth, or undefined for anonymous
+  const userIdentifier = curpHashPrefix || 'anonymous'
 
   switch (action) {
     case 'qr_generated':
@@ -41,22 +32,31 @@ router.post('/', (req: Request, res: Response<LogResponse>) => {
         url: data?.url,
         urlLength: data?.urlLength,
         isShortened: data?.isShortened,
-        curpHashPrefix,
+        trigger: data?.trigger || 'manual', // 'manual' | 'url_shortened' | 'url_toggle'
+        curpHashPrefix: userIdentifier,
       })
       break
     case 'qr_downloaded':
       logger.info('📥 QR descargado', {
         url: data?.url,
+        urlLength: typeof data?.url === 'string' ? data.url.length : undefined,
         format: data?.format,
         isShortened: data?.isShortened,
-        curpHashPrefix,
+        curpHashPrefix: userIdentifier,
       })
       break
     case 'auth_success':
-      logger.info('🔐 Sesión iniciada', { curpHashPrefix })
+      logger.info('🔐 Sesión iniciada', {
+        isAnonymous: data?.anonymous === true,
+        curpHashPrefix: userIdentifier,
+      })
       break
     default:
-      // Ignore other actions
+      // Log unknown actions for debugging
+      logger.warn('⚠️ Acción de log desconocida', {
+        action,
+        curpHashPrefix: userIdentifier,
+      })
       break
   }
 

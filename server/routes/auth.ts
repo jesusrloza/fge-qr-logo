@@ -20,6 +20,7 @@ interface VerifyCurpRequest {
 interface VerifyCurpResponse {
   success: boolean
   token?: string
+  curpHashPrefix?: string
   error?: string
 }
 
@@ -97,6 +98,7 @@ router.post('/verify-curp', (req: Request, res: Response<VerifyCurpResponse>) =>
     return res.json({
       success: true,
       token,
+      curpHashPrefix: curpHash.substring(0, 8),
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
