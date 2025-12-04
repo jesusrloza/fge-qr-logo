@@ -129,5 +129,3 @@ export async function registerAnonymous(): Promise<void> {
     },
   })
 }
-
-export type { ApiResponse }

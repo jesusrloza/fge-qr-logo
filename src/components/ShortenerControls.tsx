@@ -27,12 +27,9 @@ export default function ShortenerControls({
   isShortening,
   error,
   errorCode,
-  useShortUrl,
-  isQrGenerated,
   userBitlyToken,
   onServiceChange,
   onShorten,
-  onToggleUseShort,
   onUserBitlyTokenChange,
 }: ShortenerControlsProps) {
   const [copySuccess, setCopySuccess] = useState(false)
