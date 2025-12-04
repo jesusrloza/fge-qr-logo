@@ -84,14 +84,16 @@ function createEmptyCache(): CacheData {
   }
 }
 
-// Save cache to disk
-function saveCache(cache: CacheData): void {
+// Save cache to disk - returns true if successful, false otherwise
+function saveCache(cache: CacheData): boolean {
   const cachePath = getCacheFilePath()
 
   try {
     fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2), 'utf8')
+    return true
   } catch (error) {
-    logger.error('Error saving cache', { error: String(error) })
+    logger.error('Error saving cache to disk', { error: String(error) })
+    return false
   }
 }
 
@@ -208,12 +210,13 @@ export function setCachedUrl(service: string, originalUrl: string, shortUrl: str
   cleanExpiredEntries(cache)
   evictIfNeeded(cache)
 
-  saveCache(cache)
+  const persisted = saveCache(cache)
 
   logger.info('💾 Cached URL', {
     service,
     shortUrl,
     originalUrl: originalUrl.substring(0, 50) + (originalUrl.length > 50 ? '...' : ''),
+    persisted,
   })
 }
 
