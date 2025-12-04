@@ -1,10 +1,15 @@
 // API base URL - empty for same origin
 const API_BASE = ''
 
-interface ApiResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
+// Custom error class that includes error code
+export class ApiError extends Error {
+  code?: string
+
+  constructor(message: string, code?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.code = code
+  }
 }
 
 /**
@@ -14,6 +19,7 @@ export async function shortenUrl(
   url: string,
   service: string,
   curp?: string,
+  bitlyToken?: string,
 ): Promise<{ shortUrl: string; cached: boolean }> {
   try {
     const response = await fetch(`${API_BASE}/api/shorten`, {
@@ -21,18 +27,21 @@ export async function shortenUrl(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url, service, curp }),
+      body: JSON.stringify({ url, service, curp, bitlyToken }),
     })
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}))
-      throw new Error(data.error || 'El servicio de acortamiento no está disponible. Por favor intenta más tarde.')
+      throw new ApiError(
+        data.error || 'El servicio de acortamiento no está disponible. Por favor intenta más tarde.',
+        data.errorCode,
+      )
     }
 
     const data = await response.json()
 
     if (!data.success) {
-      throw new Error(data.error || 'Error al acortar la URL')
+      throw new ApiError(data.error || 'Error al acortar la URL', data.errorCode)
     }
 
     return {
@@ -41,7 +50,7 @@ export async function shortenUrl(
     }
   } catch (error) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error('No se pudo conectar con el servidor. Verifica tu conexión a internet.')
+      throw new ApiError('No se pudo conectar con el servidor. Verifica tu conexión a internet.')
     }
     throw error
   }

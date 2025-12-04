@@ -8,6 +8,19 @@ const ISGD_ENDPOINT = 'https://is.gd/create.php'
 
 export type ShortenerServiceId = 'tinyurl' | 'bitly' | 'isgd'
 
+// Error codes for distinct error handling
+export type BitlyErrorCode = 'BITLY_NO_TOKEN' | 'BITLY_INVALID_TOKEN'
+
+export class BitlyError extends Error {
+  code: BitlyErrorCode
+
+  constructor(message: string, code: BitlyErrorCode) {
+    super(message)
+    this.name = 'BitlyError'
+    this.code = code
+  }
+}
+
 // Response types for API payloads
 interface BitlyResponse {
   link?: string
@@ -70,18 +83,20 @@ async function shortenViaTinyUrl(longUrl: string): Promise<string> {
   return shortUrl
 }
 
-async function shortenViaBitly(longUrl: string): Promise<string> {
+async function shortenViaBitly(longUrl: string, userToken?: string): Promise<string> {
   logger.info('🔗 Shortening via Bit.ly', { url: longUrl.substring(0, 50) })
 
-  const accessToken = process.env.BITLY_ACCESS_TOKEN
-  if (!accessToken) {
-    throw new Error('El token de Bitly no está configurado. Asegúrate de definir BITLY_ACCESS_TOKEN en .env.')
+  if (!userToken) {
+    throw new BitlyError(
+      'No hay token de Bitly configurado. Ingresa tu token personal para continuar.',
+      'BITLY_NO_TOKEN',
+    )
   }
 
   const response = await fetch(BITLY_ENDPOINT, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      Authorization: `Bearer ${userToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -92,6 +107,13 @@ async function shortenViaBitly(longUrl: string): Promise<string> {
   const payload = (await response.json().catch(() => ({}))) as BitlyResponse
 
   if (!response.ok) {
+    // Check for authentication/authorization errors (invalid token)
+    if (response.status === 401 || response.status === 403) {
+      throw new BitlyError(
+        'El token de Bitly no es válido. Por favor verifica e intenta de nuevo.',
+        'BITLY_INVALID_TOKEN',
+      )
+    }
     const message = payload.message ?? 'Bit.ly devolvió un error. Revisa tu token y permisos.'
     throw new Error(message)
   }
@@ -124,8 +146,11 @@ async function shortenViaIsGd(longUrl: string): Promise<string> {
 
 /**
  * Shorten a URL using the specified service with retry logic
+ * @param serviceId - The shortener service to use
+ * @param longUrl - The URL to shorten
+ * @param bitlyToken - Optional user-provided Bitly token (only used for bitly service)
  */
-export async function shortenUrl(serviceId: ShortenerServiceId, longUrl: string): Promise<string> {
+export async function shortenUrl(serviceId: ShortenerServiceId, longUrl: string, bitlyToken?: string): Promise<string> {
   if (!longUrl || longUrl.trim() === '') {
     throw new Error('Por favor ingresa una URL válida antes de acortarla.')
   }
@@ -134,7 +159,8 @@ export async function shortenUrl(serviceId: ShortenerServiceId, longUrl: string)
     case 'tinyurl':
       return withRetry(() => shortenViaTinyUrl(longUrl), 'TinyURL')
     case 'bitly':
-      return withRetry(() => shortenViaBitly(longUrl), 'Bit.ly')
+      // Don't retry on token errors - they won't resolve with retries
+      return withRetry(() => shortenViaBitly(longUrl, bitlyToken), 'Bit.ly')
     case 'isgd':
       return withRetry(() => shortenViaIsGd(longUrl), 'is.gd')
     default:

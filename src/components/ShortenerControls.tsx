@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link as LinkIcon, Copy as CopyIcon, Check as CheckIcon, AlertTriangle, Zap, RefreshCw } from 'lucide-react'
 import { shortenerServices, ShortenerServiceId } from '../constants/shortener'
+import BitlyTokenInput from './BitlyTokenInput'
 import './ShortenerControls.css'
 
 interface ShortenerControlsProps {
@@ -9,11 +10,14 @@ interface ShortenerControlsProps {
   selectedService: ShortenerServiceId
   isShortening: boolean
   error: string
+  errorCode?: string // Distinct error code for handling
   useShortUrl: boolean
   isQrGenerated: boolean
+  userBitlyToken: string
   onServiceChange: (service: ShortenerServiceId) => void
   onShorten: () => void
   onToggleUseShort: (use: boolean) => void
+  onUserBitlyTokenChange: (token: string) => void
 }
 
 export default function ShortenerControls({
@@ -22,16 +26,24 @@ export default function ShortenerControls({
   selectedService,
   isShortening,
   error,
+  errorCode,
   useShortUrl,
   isQrGenerated,
+  userBitlyToken,
   onServiceChange,
   onShorten,
   onToggleUseShort,
+  onUserBitlyTokenChange,
 }: ShortenerControlsProps) {
   const [copySuccess, setCopySuccess] = useState(false)
 
   const trimmedUrl = originalUrl.trim()
   const isShortUrlWarning = trimmedUrl.length > 0 && trimmedUrl.length <= 40
+
+  // Determine if we should show BitlyTokenInput and its state
+  const isBitlySelected = selectedService === 'bitly'
+  const isBitlyTokenError = errorCode === 'BITLY_NO_TOKEN' || errorCode === 'BITLY_INVALID_TOKEN'
+  const bitlyNeedsToken = isBitlySelected && !userBitlyToken
 
   const copyToClipboard = async () => {
     try {
@@ -81,7 +93,20 @@ export default function ShortenerControls({
             </div>
           )}
 
-          <button className="shorten-button" onClick={onShorten} disabled={isShortening || !trimmedUrl}>
+          {/* Bitly Token Input - shown when Bitly is selected */}
+          {isBitlySelected && (
+            <BitlyTokenInput
+              userToken={userBitlyToken}
+              onTokenChange={onUserBitlyTokenChange}
+              hasTokenError={isBitlyTokenError}
+            />
+          )}
+
+          <button
+            className="shorten-button"
+            onClick={onShorten}
+            disabled={isShortening || !trimmedUrl || bitlyNeedsToken}
+          >
             {isShortening ? (
               <>
                 <RefreshCw size={16} className="spinning" />
@@ -95,21 +120,21 @@ export default function ShortenerControls({
             )}
           </button>
 
-          {error && (
+          {/* Error display - but not for token errors when BitlyTokenInput is shown */}
+          {error && !(isBitlyTokenError && isBitlySelected) && (
             <div className="shortener-error">
               <AlertTriangle size={16} />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="service-warning">
-            <AlertTriangle size={14} />
-            <span>
-              {selectedService === 'bitly'
-                ? 'Bit.ly requiere un token de acceso y puede tener límites según tu plan.'
-                : 'Los acortadores gratuitos pueden dejar de funcionar o limitarse en el futuro.'}
-            </span>
-          </div>
+          {/* Service warning - only for non-bitly services */}
+          {selectedService !== 'bitly' && (
+            <div className="service-warning">
+              <AlertTriangle size={14} />
+              <span>Los acortadores gratuitos pueden dejar de funcionar o limitarse en el futuro.</span>
+            </div>
+          )}
         </>
       )}
 
@@ -128,18 +153,6 @@ export default function ShortenerControls({
           </div>
 
           {copySuccess && <span className="copy-feedback">¡Copiado al portapapeles!</span>}
-
-          {isQrGenerated && (
-            <div className="url-toggle">
-              <label className="toggle-wrapper">
-                <input type="checkbox" checked={useShortUrl} onChange={(e) => onToggleUseShort(e.target.checked)} />
-                <span className="toggle-slider"></span>
-                <span className="toggle-label">
-                  {useShortUrl ? '✓ Usando URL corta en el QR' : 'Usar URL corta en el QR'}
-                </span>
-              </label>
-            </div>
-          )}
         </div>
       )}
     </div>

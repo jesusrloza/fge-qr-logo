@@ -12,9 +12,13 @@ data/url-cache.json
 
 node_modules
 dist
+dist-server
 dist-ssr
 *.local
 .env
+
+# TypeScript build info
+*.tsbuildinfo
 
 package-lock.json
 

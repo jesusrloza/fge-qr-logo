@@ -1,0 +1,272 @@
+/* Main container */
+.bitly-token-container {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+/* Header */
+.bitly-token-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #152f4a;
+}
+
+.bitly-token-header svg {
+  color: #c09f77;
+}
+
+/* Token status indicator */
+.token-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.token-status.configured {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.token-status.configured svg {
+  color: #22c55e;
+}
+
+.token-status.not-configured {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.token-status.not-configured svg {
+  color: #f59e0b;
+}
+
+/* Token error message */
+.token-error-message {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* Benefits section */
+.token-benefits {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.benefits-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 8px;
+}
+
+.benefits-title svg {
+  color: #fbbf24;
+}
+
+.benefits-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12px;
+  color: #15803d;
+  line-height: 1.6;
+}
+
+.benefits-list li {
+  margin-bottom: 2px;
+}
+
+/* Token input */
+.token-input-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.token-input {
+  width: 100%;
+  padding: 12px 44px 12px 12px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.token-input:focus {
+  outline: none;
+  border-color: #152f4a;
+  box-shadow: 0 0 0 3px rgba(21, 47, 74, 0.1);
+}
+
+.token-input.error {
+  border-color: #f87171;
+  background-color: #fef2f2;
+}
+
+.token-input::placeholder {
+  color: #9ca3af;
+  font-family: inherit;
+}
+
+.visibility-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visibility-toggle:hover {
+  color: #152f4a;
+}
+
+/* Action buttons */
+.token-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.save-token-btn,
+.clear-token-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-token-btn {
+  background: linear-gradient(135deg, #152f4a, #1b4b7d);
+  color: white;
+  border: none;
+  flex: 1;
+}
+
+.save-token-btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(21, 47, 74, 0.3);
+}
+
+.save-token-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clear-token-btn {
+  background-color: white;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.clear-token-btn:hover {
+  background-color: #fef2f2;
+  border-color: #f87171;
+}
+
+/* Saved indicator */
+.token-saved-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #166534;
+  margin-bottom: 12px;
+}
+
+.token-saved-indicator svg {
+  color: #22c55e;
+}
+
+/* Collapsible guide */
+.token-guide {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.guide-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.guide-summary::-webkit-details-marker {
+  display: none;
+}
+
+.guide-summary:hover {
+  color: #152f4a;
+}
+
+.guide-content {
+  padding: 12px 0 0 0;
+}
+
+.guide-steps {
+  margin: 0 0 12px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.8;
+}
+
+.guide-steps li {
+  margin-bottom: 6px;
+}
+
+.guide-steps a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.guide-steps a:hover {
+  text-decoration: underline;
+}
+
+.guide-note {
+  margin: 0;
+  padding: 10px 12px;
+  background-color: #f0f9ff;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #0369a1;
+}

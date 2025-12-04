@@ -3,9 +3,17 @@ import type QRCodeStyling from 'qr-code-styling'
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { createQrCodeAsync, getQrVersion } from './constants'
-import { shortenUrl, logEvent } from './services/api'
+import { shortenUrl, logEvent, ApiError } from './services/api'
 import { hasValidSession, getCurpForApi, getStoredToken, migrateLocalStorage } from './services/auth'
-import { CurpModal, UrlInput, ShortenerControls, QrPreview, DownloadPanel, ToastContainer } from './components'
+import {
+  CurpModal,
+  UrlInput,
+  ShortenerControls,
+  QrPreview,
+  DownloadPanel,
+  ToastContainer,
+  loadStoredBitlyToken,
+} from './components'
 import type { ShortenerServiceId } from './components'
 import { useToast } from './hooks'
 
@@ -27,6 +35,10 @@ export default function App() {
   const [selectedService, setSelectedService] = useState<ShortenerServiceId>('none')
   const [isShortening, setIsShortening] = useState(false)
   const [shortenError, setShortenError] = useState<string>('')
+  const [shortenErrorCode, setShortenErrorCode] = useState<string | undefined>(undefined)
+
+  // Bitly user token state
+  const [userBitlyToken, setUserBitlyToken] = useState<string>(() => loadStoredBitlyToken())
 
   // Download state
   const [fileExt, setFileExt] = useState<FileExtension>('png')
@@ -248,20 +260,25 @@ export default function App() {
     const targetUrl = url.trim()
     if (!targetUrl) {
       setShortenError('Por favor ingrese una URL válida')
+      setShortenErrorCode(undefined)
       return
     }
 
     if (selectedService === 'none') {
       setShortenError('Por favor seleccione un servicio de acortamiento')
+      setShortenErrorCode(undefined)
       return
     }
 
     setIsShortening(true)
     setShortenError('')
+    setShortenErrorCode(undefined)
     setShortenedUrl('')
 
     try {
-      const result = await shortenUrl(targetUrl, selectedService, getCurpForApi())
+      // Pass user's Bitly token if using Bitly service
+      const bitlyToken = selectedService === 'bitly' ? userBitlyToken : undefined
+      const result = await shortenUrl(targetUrl, selectedService, getCurpForApi(), bitlyToken)
 
       setShortenedUrl(result.shortUrl)
       setUseShortUrl(true)
@@ -292,16 +309,22 @@ export default function App() {
       console.error('Error shortening URL:', error)
       const message =
         error instanceof Error ? error.message : 'No se pudo acortar la URL. Por favor intenta nuevamente.'
+      const errorCode = error instanceof ApiError ? error.code : undefined
       setShortenError(message)
-      showError('Error al acortar URL', message, {
-        label: 'Intentar con otro servicio',
-        onClick: () => {
-          const services: ShortenerServiceId[] = ['isgd', 'tinyurl', 'bitly']
-          const currentIndex = services.indexOf(selectedService as ShortenerServiceId)
-          const nextService = services[(currentIndex + 1) % services.length]
-          setSelectedService(nextService)
-        },
-      })
+      setShortenErrorCode(errorCode)
+
+      // Don't show toast for token errors - the inline UI handles those
+      if (errorCode !== 'BITLY_NO_TOKEN' && errorCode !== 'BITLY_INVALID_TOKEN') {
+        showError('Error al acortar URL', message, {
+          label: 'Intentar con otro servicio',
+          onClick: () => {
+            const services: ShortenerServiceId[] = ['isgd', 'tinyurl', 'bitly']
+            const currentIndex = services.indexOf(selectedService as ShortenerServiceId)
+            const nextService = services[(currentIndex + 1) % services.length]
+            setSelectedService(nextService)
+          },
+        })
+      }
     } finally {
       setIsShortening(false)
     }
@@ -380,11 +403,21 @@ export default function App() {
             selectedService={selectedService}
             isShortening={isShortening}
             error={shortenError}
+            errorCode={shortenErrorCode}
             useShortUrl={useShortUrl}
             isQrGenerated={isQrGenerated}
+            userBitlyToken={userBitlyToken}
             onServiceChange={setSelectedService}
             onShorten={handleShorten}
             onToggleUseShort={handleToggleUseShort}
+            onUserBitlyTokenChange={(token) => {
+              setUserBitlyToken(token)
+              // Clear any previous token errors when user updates token
+              if (shortenErrorCode === 'BITLY_NO_TOKEN' || shortenErrorCode === 'BITLY_INVALID_TOKEN') {
+                setShortenError('')
+                setShortenErrorCode(undefined)
+              }
+            }}
           />
         </div>
 
@@ -397,6 +430,8 @@ export default function App() {
             isGenerated={isQrGenerated}
             onGenerate={handleGenerateQr}
             isGenerating={isGeneratingQr}
+            shortenedUrl={shortenedUrl}
+            onToggleUseShort={handleToggleUseShort}
           />
           <DownloadPanel
             fileExt={fileExt}

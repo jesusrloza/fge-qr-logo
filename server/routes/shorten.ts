@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { createLogger } from '../services/logger.js'
 import { getCachedUrl, setCachedUrl } from '../services/cache.js'
-import { shortenUrl, isValidService, ShortenerServiceId } from '../services/shorteners.js'
+import { shortenUrl, isValidService, ShortenerServiceId, BitlyError } from '../services/shorteners.js'
 
 const router = Router()
 const logger = createLogger('ShortenRoute')
@@ -10,6 +10,7 @@ interface ShortenRequest {
   url: string
   service: string
   curp?: string // This is now the curpHashPrefix (pre-hashed on server during auth)
+  bitlyToken?: string // Optional user-provided Bitly token
 }
 
 interface ShortenResponse {
@@ -17,10 +18,11 @@ interface ShortenResponse {
   shortUrl?: string
   cached?: boolean
   error?: string
+  errorCode?: string // Distinct error code for client-side handling
 }
 
 router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
-  const { url, service, curp: curpHashPrefix } = req.body as ShortenRequest
+  const { url, service, curp: curpHashPrefix, bitlyToken } = req.body as ShortenRequest
 
   // Validate request
   if (!url || typeof url !== 'string' || url.trim() === '') {
@@ -69,7 +71,7 @@ router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
     }
 
     // Not in cache, call the service
-    const shortUrl = await shortenUrl(serviceId, trimmedUrl)
+    const shortUrl = await shortenUrl(serviceId, trimmedUrl, bitlyToken)
 
     // Store in cache for future requests
     setCachedUrl(serviceId, trimmedUrl, shortUrl)
@@ -90,16 +92,19 @@ router.post('/', async (req: Request, res: Response<ShortenResponse>) => {
     })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido'
+    const errorCode = error instanceof BitlyError ? error.code : undefined
 
     logger.error('Failed to shorten URL', {
       service: serviceId,
       error: errorMessage,
+      errorCode,
       curpHashPrefix: userIdentifier,
     })
 
     return res.status(500).json({
       success: false,
       error: errorMessage,
+      errorCode,
     })
   }
 })

@@ -4,6 +4,8 @@ export { default as ShortenerControls } from './ShortenerControls'
 export { default as QrPreview } from './QrPreview'
 export { default as DownloadPanel } from './DownloadPanel'
 export { default as ToastContainer } from './Toast'
+export { default as BitlyTokenInput } from './BitlyTokenInput'
+export { loadStoredBitlyToken } from '../services/bitlyStorage'
 
 export type { ShortenerServiceId, ShortenerService } from '../constants/shortener'
 export { shortenerServices } from '../constants/shortener'

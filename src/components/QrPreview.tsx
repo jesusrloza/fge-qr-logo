@@ -8,10 +8,17 @@ interface QrPreviewProps {
   isGenerated: boolean
   onGenerate: () => void
   isGenerating?: boolean
+  shortenedUrl?: string
+  onToggleUseShort?: (useShort: boolean) => void
 }
 
 const QrPreview = forwardRef<HTMLDivElement, QrPreviewProps>(
-  ({ activeUrl, isUsingShortUrl, isGenerated, onGenerate, isGenerating = false }, ref) => {
+  (
+    { activeUrl, isUsingShortUrl, isGenerated, onGenerate, isGenerating = false, shortenedUrl, onToggleUseShort },
+    ref,
+  ) => {
+    const showUrlToggle = !!shortenedUrl && !!onToggleUseShort
+
     return (
       <div className="qr-preview-container">
         <div className="qr-preview-header">
@@ -43,6 +50,19 @@ const QrPreview = forwardRef<HTMLDivElement, QrPreviewProps>(
           </div>
           <code className="active-url-text">{activeUrl || 'Ingresa una URL para generar el código'}</code>
         </div>
+
+        {/* URL toggle - shown when shortened URL is available */}
+        {showUrlToggle && (
+          <div className="qr-url-toggle">
+            <label className="qr-toggle-wrapper">
+              <input type="checkbox" checked={isUsingShortUrl} onChange={(e) => onToggleUseShort!(e.target.checked)} />
+              <span className="qr-toggle-slider"></span>
+              <span className="qr-toggle-label">
+                {isUsingShortUrl ? '✓ Usando URL corta en el QR' : 'Usar URL corta en el QR'}
+              </span>
+            </label>
+          </div>
+        )}
       </div>
     )
   },
