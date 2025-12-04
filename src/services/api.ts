@@ -1,5 +1,6 @@
-// API base URL - empty for same origin
-const API_BASE = ''
+// API base URL - uses Vite's base URL for subpath deployments
+// Remove trailing slash from BASE_URL since API paths start with /
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
 
 // Custom error class that includes error code
 export class ApiError extends Error {

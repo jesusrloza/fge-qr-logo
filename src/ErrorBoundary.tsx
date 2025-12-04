@@ -25,7 +25,9 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo })
 
     // Log error to server (fire and forget)
-    fetch('/api/log', {
+    // Use BASE_URL for subpath deployments
+    const apiBase = import.meta.env.BASE_URL.replace(/\/$/, '')
+    fetch(`${apiBase}/api/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -46,7 +48,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleGoHome = () => {
-    window.location.href = '/'
+    window.location.href = import.meta.env.BASE_URL
   }
 
   public render() {
