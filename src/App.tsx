@@ -57,6 +57,13 @@ export default function App() {
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
+      // Only require auth if explicitly enabled via env var
+      if (import.meta.env.VITE_ENABLE_AUTH !== 'true') {
+        console.log('[Auth] Authentication not enabled (set VITE_ENABLE_AUTH=true to enable)')
+        setIsAuthChecked(true)
+        return
+      }
+
       // Migrate from old localStorage format if needed
       migrateLocalStorage()
 
