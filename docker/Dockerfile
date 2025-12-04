@@ -4,6 +4,10 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+# Build argument for base URL (for subpath deployments like /fge-qr-logo/)
+ARG VITE_BASE_URL=/
+ENV VITE_BASE_URL=${VITE_BASE_URL}
+
 # Copy package files
 COPY package*.json ./
 

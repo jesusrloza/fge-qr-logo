@@ -6,6 +6,9 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      args:
+        # Set VITE_BASE_URL for subpath deployments (e.g., /fge-qr-logo/)
+        - VITE_BASE_URL=${VITE_BASE_URL:-/}
     ports:
       - '4173:4173'
     restart: unless-stopped

@@ -122,11 +122,30 @@ docker cp fge-qr-logo:/app/logs/2025-Q1.log ./2025-Q1.log
 
 Required environment variables (set in `.env` file):
 
-| Variable     | Description                          | Example                        |
-| ------------ | ------------------------------------ | ------------------------------ |
-| `JWT_SECRET` | Secret key for JWT token signing     | `your-secret-key-min-32-chars` |
-| `NODE_ENV`   | Environment mode                     | `production`                   |
-| `PORT`       | Server port (optional, default 3000) | `3000`                         |
+| Variable        | Description                                               | Example                        |
+| --------------- | --------------------------------------------------------- | ------------------------------ |
+| `JWT_SECRET`    | Secret key for JWT token signing                          | `your-secret-key-min-32-chars` |
+| `NODE_ENV`      | Environment mode                                          | `production`                   |
+| `PORT`          | Server port (optional, default 3000)                      | `3000`                         |
+| `VITE_BASE_URL` | Base path for subpath deployments (optional, default `/`) | `/fge-qr-logo/`                |
+
+## Deploying to a Subpath
+
+If you deploy the app to a subpath (e.g., `https://example.com/fge-qr-logo/`), you need to set the `VITE_BASE_URL` environment variable:
+
+```bash
+# In your .env file
+VITE_BASE_URL=/fge-qr-logo/
+```
+
+Then rebuild the Docker image:
+
+```bash
+make clean
+make start
+```
+
+The base URL must start and end with a `/` (e.g., `/fge-qr-logo/`).
 
 ## Health Check
 

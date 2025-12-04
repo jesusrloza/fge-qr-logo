@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react-swc'
 import { createServer as createApiServer, initializeServer } from './server/index'
 
 export default defineConfig({
+  // Support deployment to a subpath (e.g., /fge-qr-logo/)
+  // Set VITE_BASE_URL environment variable to configure (e.g., VITE_BASE_URL=/fge-qr-logo/)
+  base: process.env.VITE_BASE_URL || '/',
   plugins: [
     react(),
     {

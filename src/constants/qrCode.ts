@@ -44,7 +44,7 @@ async function loadLogoAsDataUrl(): Promise<string> {
       }
     }
     img.onerror = () => reject(new Error('Failed to load logo image'))
-    img.src = '/fge400.png'
+    img.src = `${import.meta.env.BASE_URL}fge400.png`
   })
 
   return logoLoadPromise
@@ -209,7 +209,7 @@ export function createQrCode(): QRCodeStyling {
   console.log('[QR Debug] Creating fresh QRCodeStyling instance')
   return new QRCodeStyling({
     ...QR_CONFIG,
-    image: cachedLogoDataUrl || '/fge400.png',
+    image: cachedLogoDataUrl || `${import.meta.env.BASE_URL}fge400.png`,
   })
 }
 
