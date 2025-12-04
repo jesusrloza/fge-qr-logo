@@ -27,7 +27,13 @@ const QrPreview = forwardRef<HTMLDivElement, QrPreviewProps>(
         </div>
 
         <div className={`qr-preview-box ${isGenerated ? 'qr-generated' : ''}`}>
-          <div className="qr-render-target" ref={ref} aria-live="polite" aria-label="Vista previa del código QR" />
+          <div
+            className="qr-render-target"
+            ref={ref}
+            aria-live="polite"
+            aria-label="Vista previa del código QR"
+            style={{ visibility: isGenerated ? 'visible' : 'hidden' }}
+          />
           {!isGenerated && (
             <div className="qr-placeholder">
               <QrCode size={48} strokeWidth={1} />

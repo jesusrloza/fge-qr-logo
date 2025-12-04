@@ -3,10 +3,8 @@ import type QRCodeStyling from 'qr-code-styling'
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { createQrCodeAsync, getQrVersion } from './constants'
-import { shortenUrl, logEvent, ApiError } from './services/api'
-import { hasValidSession, getCurpForApi, getStoredToken, migrateLocalStorage } from './services/auth'
+import { shortenWithService } from './services/urlShortener'
 import {
-  CurpModal,
   UrlInput,
   ShortenerControls,
   QrPreview,
@@ -18,10 +16,6 @@ import type { ShortenerServiceId } from './components'
 import { useToast } from './hooks'
 
 export default function App() {
-  // Auth state
-  const [showCurpModal, setShowCurpModal] = useState(false)
-  const [isAuthChecked, setIsAuthChecked] = useState(false)
-
   // URL state
   const [url, setUrl] = useState('https://fiscaliamichoacan.gob.mx/')
   const [shortenedUrl, setShortenedUrl] = useState<string>('')
@@ -54,48 +48,8 @@ export default function App() {
   const activeUrl = useShortUrl && shortenedUrl ? shortenedUrl : url
   const activeUrlLength = activeUrl.length
 
-  // Check authentication on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      // Only require auth if explicitly enabled via env var
-      if (import.meta.env.VITE_ENABLE_AUTH !== 'true') {
-        console.log('[Auth] Authentication not enabled (set VITE_ENABLE_AUTH=true to enable)')
-        setIsAuthChecked(true)
-        return
-      }
-
-      // Migrate from old localStorage format if needed
-      migrateLocalStorage()
-
-      const token = getStoredToken()
-      if (!token) {
-        setShowCurpModal(true)
-      } else if (token !== 'anonymous') {
-        const isValid = await hasValidSession()
-        if (!isValid) {
-          setShowCurpModal(true)
-        }
-      }
-      setIsAuthChecked(true)
-    }
-    checkAuth()
-  }, [])
-
   // Initialize QR code library (create fresh instance and append to DOM)
-  // This effect must run AFTER isAuthChecked is true, so the QrPreview component is mounted
   useEffect(() => {
-    // Don't run until auth check is complete and the QR preview is mounted
-    if (!isAuthChecked) {
-      console.log('[QR Debug] Init effect skipped - auth not checked yet')
-      return
-    }
-
-    console.log('[QR Debug] Init effect running', {
-      hasRef: !!qrRef.current,
-      hasInstance: !!qrInstanceRef.current,
-      refChildren: qrRef.current?.children.length,
-    })
-
     if (qrRef.current && !qrInstanceRef.current) {
       // Create QR instance asynchronously to ensure logo is cached
       const initQr = async () => {
@@ -138,7 +92,7 @@ export default function App() {
       console.log('[QR Debug] Cleanup - clearing instance ref')
       qrInstanceRef.current = null
     }
-  }, [isAuthChecked])
+  }, [])
 
   // Track if the active URL has changed since last QR generation
   const lastGeneratedUrlRef = useRef<string>('')
@@ -151,18 +105,6 @@ export default function App() {
     if (isQrGenerated && shortenedUrl) {
       const newActiveUrl = useShort ? shortenedUrl : url
       regenerateQrWithUrl(newActiveUrl)
-
-      // Log the QR regeneration due to URL toggle
-      logEvent(
-        'qr_generated',
-        {
-          url: newActiveUrl,
-          urlLength: newActiveUrl.length,
-          isShortened: useShort,
-          trigger: 'url_toggle', // User toggled between short/original URL
-        },
-        getCurpForApi(),
-      )
     }
   }
 
@@ -237,18 +179,6 @@ export default function App() {
 
       setIsQrGenerated(true)
 
-      // Log QR generation - only on explicit user action (button click)
-      logEvent(
-        'qr_generated',
-        {
-          url: activeUrl,
-          urlLength: activeUrl.length,
-          isShortened: useShortUrl && !!shortenedUrl,
-          trigger: 'manual', // Explicit button click
-        },
-        getCurpForApi(),
-      )
-
       showSuccess('QR generado', 'El código QR se generó exitosamente.')
     } catch (error) {
       console.error('Error generating QR code:', error)
@@ -283,55 +213,35 @@ export default function App() {
     setShortenedUrl('')
 
     try {
-      // Pass user's Bitly token if using Bitly service
+      // Call client-side shortener directly (pass Bitly token if using Bitly)
       const bitlyToken = selectedService === 'bitly' ? userBitlyToken : undefined
-      const result = await shortenUrl(targetUrl, selectedService, getCurpForApi(), bitlyToken)
+      const shortUrl = await shortenWithService(selectedService, targetUrl, bitlyToken)
 
-      setShortenedUrl(result.shortUrl)
+      setShortenedUrl(shortUrl)
       setUseShortUrl(true)
 
       // If QR was already generated, regenerate it with the new shortened URL
       if (isQrGenerated) {
-        regenerateQrWithUrl(result.shortUrl)
-
-        // Log the auto-regenerated QR with shortened URL
-        logEvent(
-          'qr_generated',
-          {
-            url: result.shortUrl,
-            urlLength: result.shortUrl.length,
-            isShortened: true,
-            trigger: 'url_shortened', // Indicates this was auto-triggered by shortening
-          },
-          getCurpForApi(),
-        )
+        regenerateQrWithUrl(shortUrl)
       }
 
-      if (result.cached) {
-        showInfo('URL en caché', 'Esta URL ya había sido acortada previamente.')
-      } else {
-        showSuccess('URL acortada', 'La URL se acortó exitosamente.')
-      }
+      showSuccess('URL acortada', 'La URL se acortó exitosamente.')
     } catch (error) {
       console.error('Error shortening URL:', error)
       const message =
         error instanceof Error ? error.message : 'No se pudo acortar la URL. Por favor intenta nuevamente.'
-      const errorCode = error instanceof ApiError ? error.code : undefined
       setShortenError(message)
-      setShortenErrorCode(errorCode)
+      setShortenErrorCode(undefined)
 
-      // Don't show toast for token errors - the inline UI handles those
-      if (errorCode !== 'BITLY_NO_TOKEN' && errorCode !== 'BITLY_INVALID_TOKEN') {
-        showError('Error al acortar URL', message, {
-          label: 'Intentar con otro servicio',
-          onClick: () => {
-            const services: ShortenerServiceId[] = ['isgd', 'tinyurl', 'bitly']
-            const currentIndex = services.indexOf(selectedService as ShortenerServiceId)
-            const nextService = services[(currentIndex + 1) % services.length]
-            setSelectedService(nextService)
-          },
-        })
-      }
+      showError('Error al acortar URL', message, {
+        label: 'Intentar con otro servicio',
+        onClick: () => {
+          const services: ShortenerServiceId[] = ['isgd', 'tinyurl', 'bitly']
+          const currentIndex = services.indexOf(selectedService as ShortenerServiceId)
+          const nextService = services[(currentIndex + 1) % services.length]
+          setSelectedService(nextService)
+        },
+      })
     } finally {
       setIsShortening(false)
     }
@@ -354,38 +264,11 @@ export default function App() {
       name: 'qr-fge-michoacan',
     })
 
-    // Log download event - intentional user action
-    logEvent(
-      'qr_downloaded',
-      {
-        url: lastGeneratedUrlRef.current,
-        format: fileExt,
-        isShortened: useShortUrl && !!shortenedUrl,
-      },
-      getCurpForApi(),
-    )
-
     showSuccess('QR descargado', `El código QR se descargó en formato ${fileExt.toUpperCase()}.`)
-  }
-
-  const handleAuthSuccess = () => {
-    showSuccess('Sesión iniciada', 'Tu identificación ha sido registrada.')
-    logEvent('auth_success', { anonymous: false }, getCurpForApi())
-  }
-
-  if (!isAuthChecked) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-        <p>Cargando...</p>
-      </div>
-    )
   }
 
   return (
     <div className="App">
-      <CurpModal isOpen={showCurpModal} onClose={() => setShowCurpModal(false)} onSuccess={handleAuthSuccess} />
-
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       <header className="header">

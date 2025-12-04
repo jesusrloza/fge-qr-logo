@@ -23,24 +23,7 @@ class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo)
     this.setState({ errorInfo })
-
-    // Log error to server (fire and forget)
-    // Use BASE_URL for subpath deployments
-    const apiBase = (import.meta.env.BASE_URL || '').replace(/\/+$/, '')
-    fetch(`${apiBase}/api/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'error',
-        data: {
-          message: error.message,
-          stack: error.stack,
-          componentStack: errorInfo.componentStack,
-        },
-      }),
-    }).catch(() => {
-      // Ignore logging failures
-    })
+    // Errors are logged to console only (no server-side logging)
   }
 
   private handleRetry = () => {

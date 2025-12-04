@@ -27,10 +27,12 @@ async function shortenViaTinyUrl(longUrl: string) {
   return response.text()
 }
 
-async function shortenViaBitly(longUrl: string) {
-  const accessToken = import.meta.env.VITE_BITLY_ACCESS_TOKEN
+async function shortenViaBitly(longUrl: string, userToken?: string) {
+  const accessToken = userToken || import.meta.env.VITE_BITLY_ACCESS_TOKEN
   if (!accessToken) {
-    throw new Error('El token de Bitly no está configurado. Asegúrate de definir VITE_BITLY_ACCESS_TOKEN en .env.')
+    throw new Error(
+      'El token de Bitly no está configurado. Ingresa tu token de Bitly o define VITE_BITLY_ACCESS_TOKEN en .env.',
+    )
   }
 
   const response = await fetch(BITLY_ENDPOINT, {
@@ -67,7 +69,7 @@ async function shortenViaIsGd(longUrl: string) {
 
   return payload.shorturl
 }
-export async function shortenWithService(serviceId: ShortenerServiceId, longUrl: string) {
+export async function shortenWithService(serviceId: ShortenerServiceId, longUrl: string, bitlyToken?: string) {
   if (!longUrl || longUrl.trim() === '') {
     throw new Error('Por favor ingresa una URL válida antes de acortarla.')
   }
@@ -80,7 +82,7 @@ export async function shortenWithService(serviceId: ShortenerServiceId, longUrl:
     case 'tinyurl':
       return shortenViaTinyUrl(longUrl)
     case 'bitly':
-      return shortenViaBitly(longUrl)
+      return shortenViaBitly(longUrl, bitlyToken)
     case 'isgd':
       return shortenViaIsGd(longUrl)
     default:
