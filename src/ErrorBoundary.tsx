@@ -26,7 +26,7 @@ class ErrorBoundary extends Component<Props, State> {
 
     // Log error to server (fire and forget)
     // Use BASE_URL for subpath deployments
-    const apiBase = import.meta.env.BASE_URL.replace(/\/$/, '')
+    const apiBase = (import.meta.env.BASE_URL || '').replace(/\/+$/, '')
     fetch(`${apiBase}/api/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
