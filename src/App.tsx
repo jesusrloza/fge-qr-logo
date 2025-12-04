@@ -38,7 +38,7 @@ export default function App() {
   const [fileExt, setFileExt] = useState<FileExtension>('png')
 
   // Toast notifications
-  const { toasts, dismissToast, showError, showSuccess, showInfo } = useToast()
+  const { toasts, dismissToast, showError, showSuccess } = useToast()
 
   // QR code ref
   const qrRef = useRef<HTMLDivElement>(null)
